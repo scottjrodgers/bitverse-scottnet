@@ -1,3 +1,4 @@
+import {setNuked} from "/scottnet/lib/state.js"
 
 /** @param {NS} ns */
 function not_pserv(ns, host){
@@ -32,7 +33,11 @@ function capture(ns, host){
     if (ports >= reqPorts){
       ns.nuke(host);
       ns.tprintf("Nuked server: %s", host);
+      setNuked(ns, host);
     }
+  } else {
+    // already nuked -- just to be sure.
+    setNuked(ns, host);
   }
 }
 

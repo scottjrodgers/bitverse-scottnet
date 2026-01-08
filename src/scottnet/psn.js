@@ -4,17 +4,18 @@
  */
 
 import {get_my_network, totalRam, totalFreeRam} from "/scottnet/lib/servers.js";
-import {processMap, collect_processes} from "/scottnet/lib/process.js";
+import {EMPTY, collect_processes} from "/scottnet/lib/process.js";
 
 
 /** @param {NS} ns */
 export async function main(ns) {
     const flags = ns.flags([
         ["help", false], // help flag
-        ['server', false],   // by_server
+        ['s', false],   // by_server
+        ['g', EMPTY],   // a grep string
     ]);
     const my_servers = get_my_network(ns);
-    const pids = collect_processes(ns, my_servers, flags.server);
+    const pids = collect_processes(ns, my_servers, flags.s, flags.g);
     ns.tprintf("\nTHREADS  SCRIPT + ARGS                                          RAM USAGE");
     ns.tprintf(  "-------------------------------------------------------------------------");
     let keys = [...pids.keys()].sort();

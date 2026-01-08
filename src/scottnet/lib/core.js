@@ -1,10 +1,11 @@
 /** @param {NS} ns */
-export async function copy_bot_scripts(ns, host) {
-    await ns.scp("/scottnet/weakenbot.js", host);
-    await ns.scp("/scottnet/growbot.js", host);
-    await ns.scp("/scottnet/hackbot.js", host);
-    await np.scp("/scottnet/weaken_prepbot.js", host);
-    await np.scp("/scottnet/grow_prepbot.js", host);
+export function copy_bot_scripts(ns, host) {
+    ns.scp("/scottnet/bots/weakenbot.js", host);
+    ns.scp("/scottnet/bots/growbot.js", host);
+    ns.scp("/scottnet/bots/hackbot.js", host);
+    ns.scp("/scottnet/bots/weaken_prepbot.js", host);
+    ns.scp("/scottnet/bots/grow_prepbot.js", host);
+    ns.scp("/scottnet/bots/sharebot.js", host);
 }
 
 
@@ -33,18 +34,23 @@ export function calculateServerRatio(ns, target){
     const weakenTime = ns.getWeakenTime(target);
     const e_hack = ns.hackAnalyze(target);
     const e_grow = ns.growthAnalyze(target, 1.01, 1);
-    const e_weaken = ns.weakenAnalyze(1, 1);
-    const es_hack = ns.hackAnalyzeSecurity(1, target);
-    const es_grow = ns.growthAnalyzeSecurity(1, target, 1);
-
+    const e_weaken = ns.weakenAnalyze(1, 2);
+    // const es_hack = ns.hackAnalyzeSecurity(1, target);
+    // const es_grow = ns.growthAnalyzeSecurity(1, target, 2);
+    const es_hack = 0.002;
+    const es_grow = 0.004;
     const growPerHack = (100 * e_grow * e_hack);
     const weakenPerHack = (es_hack + (growPerHack * es_grow)) / e_weaken;
     const growJobsPerHack = growPerHack * growTime / hackTime;
     const weakenJobsPerHack = weakenPerHack * weakenTime / hackTime;
+
+    // Adding a 10% safety margin on grow and weaken
     return {
         hack: 1,
-        grow: growJobsPerHack,
-        weaken: weakenJobsPerHack
+        grow: growJobsPerHack * 2,
+        weaken: weakenJobsPerHack * 1.6,
+        growDelay: weakenTime - growTime + 1000,
+        hackDelay: weakenTime - hackTime + 2000,
     };
 }
 

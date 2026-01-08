@@ -186,16 +186,24 @@ export function get_my_network(ns){
 export function getNetworkRam(ns){
     const my_servers = get_my_network(ns);
     const availability = [];
-    const home_ram = Math.max(0, ns.getServerMaxRam("home") - ns.getServerUsedRam("home") - 16); // leave 16GB free on home
+    const home_ram = Math.max(0, ns.getServerMaxRam("home") - ns.getServerUsedRam("home") - 8); // leave 16GB free on home
     for (let [name, server] of my_servers) {
         const free_ram = server.freeRam();
+        // ns.tprintf("Server: %s, Ram: %d", name, free_ram);
         if (name != "home") {
-            availability.push({name: name, freeRam: free_ram});
+            availability.push({"name": name, "freeRam":free_ram});
         }
+        // ns.tprintf("dbg: %s", JSON.stringify(availability));
     }
     // try to fill the smaller spaces first
-    let sorted_availability = [...availability.entries()].sort((a, b) => a['freeRam'] - b['freeRam']);
+    let sorted_availability = availability.sort((a, b) => a['freeRam'] - b['freeRam']);
     sorted_availability.push({name: 'home', freeRam: home_ram});
+
+    for(let data of sorted_availability){
+      let name = data.name;
+      let ram = data.freeRam;
+      // ns.tprintf("Ram: %s -> %s", name, ram);
+    }
 
     return sorted_availability;
 }

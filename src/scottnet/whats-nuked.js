@@ -14,7 +14,7 @@ function display(ns, host, limit) {
   let currMoney = ns.formatNumber(server.moneyAvailable, 3, 1000);
   let currSecurity = server.hackDifficulty;
   let minSecurity = server.minDifficulty;
-  if (server.hasAdminRights) {
+  if (server.hasAdminRights == true) {
     ns.tprintf("%s: RAM: %s/%s, Backdoor: %s, Max Cash: %s, Curr. Cash: %s, Min Security: %d, Curr. Security: %d",
       host, ns.formatRam(freeRam), ns.formatRam(ram, 0), backdoor, maxMoney, currMoney, minSecurity, currSecurity);
   }
@@ -31,9 +31,9 @@ function walk(ns, name, visited, servers, limit, depth = 0) {
     if (visited.has(s)) {
       continue;
     }
-    if (not_pserv(ns, s)) {
+    // if (not_pserv(ns, s)) {
       walk(ns, s, visited, servers, limit, depth + 1);
-    }
+    // }
   }
 }
 
