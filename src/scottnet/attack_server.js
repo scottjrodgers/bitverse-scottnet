@@ -41,5 +41,5 @@ export async function main(ns) {
     deploymentConfig.addBatch("hack", hackCount, 60000.0 / hackCount);
 
     ns.tprintf("Deployment config: %s", JSON.stringify(deploymentConfig));
-    await execBotDeployment(ns, deploymentConfig);
+    // await execBotDeployment(ns, deploymentConfig);
 }

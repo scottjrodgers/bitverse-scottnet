@@ -33,9 +33,10 @@ export function calculateServerRatio(ns, target){
     const weakenTime = ns.getWeakenTime(target);
     const e_hack = ns.hackAnalyze(target);
     const e_grow = ns.growthAnalyze(target, 1.01, 1);
-    const e_weaken = ns.weakenAnalyze(1, 2);
+    const e_weaken = ns.weakenAnalyze(1, 1);
     const es_hack = ns.hackAnalyzeSecurity(1, target);
-    const es_grow = ns.growthAnalyzeSecurity(1, target, 2);
+    const es_grow = ns.growthAnalyzeSecurity(1, target, 1);
+
     const growPerHack = (100 * e_grow * e_hack);
     const weakenPerHack = (es_hack + (growPerHack * es_grow)) / e_weaken;
     const growJobsPerHack = growPerHack * growTime / hackTime;

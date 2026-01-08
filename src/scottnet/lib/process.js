@@ -51,7 +51,7 @@ export class ProcessInfo {
     }
 
     ramUsage() {
-        return this.ns.getServerMaxRam(this.filename) * this.threads;
+        return this.ns.getScriptRam(this.filename) * this.threads;
     }
 }
 
@@ -77,7 +77,7 @@ export class BotDeployment {
         this.batches = [];
     }
 
-    addBatch(botType, numJobs, period, threadsPerJob) {
+    addBatch(botType, numJobs, period, threadsPerJob=1) {
         const batch = new BotBatch(botType, numJobs, period, threadsPerJob);
         this.batches.push(batch);
     }
