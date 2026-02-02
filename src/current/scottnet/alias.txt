@@ -1,0 +1,4 @@
+// Aliases to easily use ScottNet resources
+
+alias ps='run /scottnet/psn.js'
+alias deploy='run /scottnet/deploy.js'

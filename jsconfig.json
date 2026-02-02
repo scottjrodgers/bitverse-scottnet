@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    "module": "ESNext",
     "checkJs": true,
-    "typeRoots": ["./types"]
+    "strict": false,
+    "types": [],
+    "baseUrl": ".",
   },
-  "include": ["**/*.js"]
+  "include": ["**/*.js", "netscript.d.ds.ts"]
 }

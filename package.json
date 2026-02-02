@@ -1,0 +1,24 @@
+{
+  "name": "bitverse-scottnet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottjrodgers/bitverse-scottnet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/scottjrodgers/bitverse-scottnet/issues"
+  },
+  "homepage": "https://github.com/scottjrodgers/bitverse-scottnet#readme"
+}
