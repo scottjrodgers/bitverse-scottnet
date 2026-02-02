@@ -1,3 +1,10 @@
+.idea/
+.vscode/
+reference/
+
+
+
+
 # Logs
 logs
 *.log
