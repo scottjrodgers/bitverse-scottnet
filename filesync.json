@@ -1,0 +1,9 @@
+{
+  "allowedFiletypes": [".js", ".txt"],
+  "allowDeletingFiles": false,
+  "port": 12525,
+  "scriptsFolder": "./src",
+  "quiet": false,
+  "dry": false,
+  "pushAllOnConnection": false
+}

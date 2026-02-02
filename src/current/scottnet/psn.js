@@ -16,6 +16,7 @@ export async function main(ns) {
     ]);
     const my_servers = get_my_network(ns);
     const pids = collect_processes(ns, my_servers, flags.s, flags.g);
+    const pids = collect_processes(ns, my_servers, flags.s, flags.g);
     ns.tprintf("\nTHREADS  SCRIPT + ARGS                                          RAM USAGE");
     ns.tprintf(  "-------------------------------------------------------------------------");
     let keys = [...pids.keys()].sort();
