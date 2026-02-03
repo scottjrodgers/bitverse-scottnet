@@ -7,6 +7,7 @@ const STATUS = {
   STOPPED: "STOPPED",
   PAUSED: "PAUSED"
 }
+
 class BaseDaemon{
   /**
    * @param {NS} ns
@@ -41,6 +42,25 @@ class BaseDaemon{
     this.shutDown();
   }
 
+  // Utility methods
+  hasMessage(){
+    return !this.mq.isEmpty();
+  }
+
+  getMessage(){
+    return this.mq.dequeue();
+  }
+
+  /**
+   * Send a message to another daemon
+   * @param {string} recipient
+   * @param {string} messageType
+   * @param {any} data
+   * @param {string} id
+   */
+  sendMessage(recipient, data, messageType=undefined, id=undefined){
+    this.coms.sendMessage(recipient, data, messageType, id);
+  }
 
   // Internal methods
   async __mainloop(){
