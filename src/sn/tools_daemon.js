@@ -1,4 +1,4 @@
-import {BaseDaemon} from "src/sn/lib/base_daemon.js";
+import {BaseDaemon} from "sn/lib/base_daemon.js";
 
 
 export class ToolsDaemon extends BaseDaemon{
@@ -8,7 +8,7 @@ export class ToolsDaemon extends BaseDaemon{
      */
     constructor(ns){
         super(ns, "tools");
-        this.ns = ns;
+        this.period = 30000; // Check every 30 seconds
     }
 
     async loopBody(){
@@ -18,7 +18,13 @@ export class ToolsDaemon extends BaseDaemon{
         const cash = this.ns.getPlayer().money;
 
         if(this.ns.singularity.purchaseTor()){
-            const dwProgs = this.ns.singularity.getDarkwebPrograms();        
+            const dwProgs = [
+                "BruteSSH.exe", 
+                "FTPCrack.exe", 
+                "relaySMTP.exe", 
+                "HTTPWorm.exe", 
+                "SQLInject.exe"
+            ];
             const progsToBuy = dwProgs.filter(p => !this.ns.fileExists(p, "home"));
             for(const prog of progsToBuy){
                 const cost = this.ns.singularity.getDarkwebProgramCost(prog);

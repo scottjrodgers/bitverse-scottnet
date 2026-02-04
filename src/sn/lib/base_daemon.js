@@ -1,5 +1,5 @@
-import { CommCenter, SYSMSG } from "src/sn/lib/communications";
-import { MessageQueue } from "src/sn/lib/message_queue";
+import { CommCenter, SYSMSG } from "sn/lib/communications";
+import { MessageQueue } from "sn/lib/message_queue";
 
 
 const STATUS = {
@@ -19,6 +19,7 @@ export class BaseDaemon{
     this.coms = new CommCenter(ns, serverName);
     this.status = STATUS.STOPPED
     this.mq = new MessageQueue(ns, 100);
+    this.period = 1000;
   }
 
   // Override these methods
@@ -69,7 +70,7 @@ export class BaseDaemon{
       if(this.status == STATUS.RUNNING){
         await this.loopBody();
       }
-      await this.sNS.sleep(1000)
+      await this.sNS.sleep(this.period)
     }
   }
 
