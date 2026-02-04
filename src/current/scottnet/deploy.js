@@ -1,4 +1,4 @@
-import { botMap, deploy_job } from "/scottnet/lib/process.js";
+import { botMap, deploy_job } from "current/scottnet/lib/process.js";
 
 
 /** @param {NS} ns */

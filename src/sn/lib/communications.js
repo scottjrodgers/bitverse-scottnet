@@ -12,9 +12,10 @@ export const SERVER_PORTS = {
   'stocks': 9,
   'ipGO': 10,
   'corporations': 11,
-  'logs': 12,
-  'd1': 13,
-  'd2': 14,
+  'tools': 12,
+  'd1': 20,
+  'd2': 21,
+  'logs': 22,
 };
 
 export const SYSMSG={

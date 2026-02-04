@@ -1,5 +1,5 @@
-import { CommCenter, SYSMSG } from "lib/communications";
-import { MessageQueue } from "src/lib/message_queue";
+import { CommCenter, SYSMSG } from "src/sn/lib/communications";
+import { MessageQueue } from "src/sn/lib/message_queue";
 
 
 const STATUS = {
@@ -8,7 +8,7 @@ const STATUS = {
   PAUSED: "PAUSED"
 }
 
-class BaseDaemon{
+export class BaseDaemon{
   /**
    * @param {NS} ns
    * @param {string} serverName

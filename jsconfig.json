@@ -1,11 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "checkJs": true,
-    "strict": false,
-    "types": [],
-    "baseUrl": ".",
+    "target": "ES6",
+    "module": "CommonJS",
+    "baseUrl": "./src",
   },
-  "include": ["**/*.js", "netscript.d.ds.ts"]
+  // "include": ["**/*.js", "netscript.d.ds.ts"]
+  "exclude": ["node_modules", "**/node_modules/*"]
 }
