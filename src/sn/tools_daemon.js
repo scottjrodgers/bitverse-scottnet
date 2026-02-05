@@ -1,4 +1,4 @@
-import {BaseDaemon} from "sn/lib/base_daemon.js";
+import {BaseDaemon} from "/sn/lib/base_daemon.js";
 
 
 export class ToolsDaemon extends BaseDaemon{
