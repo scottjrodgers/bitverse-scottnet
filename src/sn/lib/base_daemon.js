@@ -14,12 +14,11 @@ export class BaseDaemon{
    * @param {string} serverName
    */
   constructor(ns, serverName){
-    this.sNS = ns;
+    this.ns = ns;
     this.serverName = serverName;
     this.coms = new CommCenter(ns, serverName);
     this.status = STATUS.STOPPED
     this.mq = new MessageQueue(ns, 100);
-    this.period = 1000;
   }
 
   // Override these methods
@@ -70,7 +69,7 @@ export class BaseDaemon{
       if(this.status == STATUS.RUNNING){
         await this.loopBody();
       }
-      await this.sNS.sleep(this.period)
+      await this.ns.sleep(1000)
     }
   }
 
