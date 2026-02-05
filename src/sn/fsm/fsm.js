@@ -87,14 +87,14 @@ export class StateMachine {
 }
 
 
-function emitSignal(ns, signal) {
+export function emitSignal(ns, signal) {
   ns.writePort(1, JSON.stringify(signal));
 }
 
 // example
 // emitSignal(ns, { type: "PREP_AUG_INSTALL", value: true });
 
-function readSignals(ns, ctx) {
+export function readSignals(ns, ctx) {
   while (true) {
     const raw = ns.readPort(1);
     if (raw === "NULL PORT DATA") break;
@@ -105,6 +105,7 @@ function readSignals(ns, ctx) {
     }
   }
 }
+
 
 /*
 --------------------------------------------
