@@ -19,6 +19,7 @@ export class BaseDaemon{
     this.coms = new CommCenter(ns, serverName);
     this.status = STATUS.STOPPED
     this.mq = new MessageQueue(ns, 100);
+    this.period = 1000;
   }
 
   // Override these methods
@@ -69,7 +70,7 @@ export class BaseDaemon{
       if(this.status == STATUS.RUNNING){
         await this.loopBody();
       }
-      await this.ns.sleep(1000)
+      await this.ns.sleep(this.period);
     }
   }
 
