@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "target": "ES6",
-    "module": "CommonJS",
-    "baseUrl": "./src",
-  },
-  // "include": ["**/*.js", "netscript.d.ds.ts"]
-  "exclude": ["node_modules", "**/node_modules/*"]
-}
