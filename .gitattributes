@@ -1,0 +1,5 @@
+# Keep LF in the working tree on every platform. Bitburner scripts are synced
+# verbatim to the game; CRLF sneaking in on Windows is not worth debugging.
+* text=auto eol=lf
+*.png binary
+*.pdf binary
