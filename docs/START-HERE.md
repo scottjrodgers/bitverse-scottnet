@@ -99,6 +99,7 @@ Read in this order if you are new:
 | `specs/recipe-dsl.md` | **Normative.** The corp round-recipe engine |
 | `managers/corp.md` | The deep one. Cycle sync, Smart Supply, Market-TA2, round recipes, allocator |
 | `hwgw-batching-design.md` | The per-target attack pipeline |
+| `design-review.md` | Readiness review of the above. Closes open question 7; lists what blocks the recipe engine |
 | `managers/{director,infra,targeting,factions,augs}.md` | Scoped stubs — responsibility, state schema, open decisions |
 
 Not yet scoped: `contracts`, `karma`, `sleeves`, `gang`, `hacknet`, `hashes`, `bladeburner`.

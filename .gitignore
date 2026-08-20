@@ -153,3 +153,7 @@ bitburner-data/
 # Windows
 Thumbs.db
 desktop.ini
+
+# python
+src/__pycache__/
+*.pyc

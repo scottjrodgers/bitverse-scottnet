@@ -1,0 +1,22 @@
+# Bitburner filesync config
+
+# Local directory to sync. Relative paths are resolved against the
+# location of this config file.
+directory = "./scripts"
+
+# Port Bitburner connects to. Set the same port under
+# Options -> Remote API -> port in-game, then press Connect.
+game_port = 12525
+
+# Local-only port the CLI (bb.py) uses to talk to a running `bb.py serve`.
+# Doesn't need to match anything in-game.
+control_port = 12526
+
+# In-game server files are pushed to / pulled from by default.
+server = "home"
+
+# File extensions synced by `sync` and by the watcher.
+include_extensions = [".js", ".ts", ".txt", ".script", ".json"]
+
+# fnmatch-style patterns checked against the relative path; always excluded.
+exclude_patterns = ["*.d.ts", "node_modules/*", ".git/*", "__pycache__/*"]
