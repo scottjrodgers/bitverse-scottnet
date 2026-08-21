@@ -2,7 +2,7 @@
 
 **Status:** scoped, not designed.
 **Build order:** step 3.
-**Parent:** `claude/automation-architecture.md` · **Depends on:** `claude/hwgw-batching-design.md`
+**Parent:** `docs/automation-architecture.md` · **Depends on:** `docs/hwgw-batching-design.md`
 
 ---
 

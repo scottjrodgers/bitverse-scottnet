@@ -149,6 +149,7 @@ vite.config.ts.timestamp-*
 
 # Bitburner project
 bitburner-data/
+data/
 
 # Windows
 Thumbs.db

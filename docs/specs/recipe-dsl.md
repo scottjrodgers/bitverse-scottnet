@@ -1,7 +1,7 @@
 # Spec: Recipe DSL
 
 **Status:** normative for the corp round recipes. Pin before writing round 1.
-**Parent:** `claude/managers/corp.md` §2, §6.
+**Parent:** `docs/managers/corp.md` §2, §6.
 
 A "recipe" is the corp automation's representation of a round setup — the round 1 and round 2
 playbooks from the manual. It exists to solve three problems at once:

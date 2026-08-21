@@ -2,7 +2,7 @@
 
 **Status:** scoped, not designed.
 **Build order:** step 5 (with `factions`). **Highest-leverage component after HWGW.**
-**Parent:** `claude/automation-architecture.md`
+**Parent:** `docs/automation-architecture.md`
 
 ---
 

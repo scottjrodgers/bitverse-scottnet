@@ -2,7 +2,7 @@
 
 **Status:** scoped, not designed.
 **Build order:** step 2 — first manager after HWGW. Biggest immediate win, simplest logic.
-**Parent:** `claude/automation-architecture.md`
+**Parent:** `docs/automation-architecture.md`
 
 ---
 

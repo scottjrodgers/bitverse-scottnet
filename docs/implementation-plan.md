@@ -5,8 +5,8 @@
 unlocks `WarehouseAPI` and `OfficeAPI` for free in every other BitNode (otherwise $50b each in
 corp funds).
 
-**Companion docs:** `claude/automation-architecture.md`, `claude/managers/corp.md`,
-`claude/specs/manager-contract.md`, `claude/specs/recipe-dsl.md`.
+**Companion docs:** `docs/automation-architecture.md`, `docs/managers/corp.md`,
+`docs/specs/manager-contract.md`, `docs/specs/recipe-dsl.md`.
 
 ---
 
@@ -151,7 +151,7 @@ Three consequences fall out of that single choice:
 |---|---|
 | Repo layout + sync-to-game | plain JS, per §4 |
 | `@ts-check` + `NetscriptDefinitions.d.ts` | editor-level checking, no build |
-| `lib/state.js` | read/write JSON state files; see `claude/specs/manager-contract.md` |
+| `lib/state.js` | read/write JSON state files; see `docs/specs/manager-contract.md` |
 | `lib/log.js` | structured append-only logging, `ns.toast` for alerts |
 | `daemon/watchdog.js` | restarts any manager whose `lastRun` goes stale |
 | **Stub Director** | writes a static `director.json` — phase, cash fractions, RAM lease |
@@ -225,7 +225,7 @@ energy/morale pinned at max.
 
 | Task | Notes |
 |---|---|
-| Recipe engine | `claude/specs/recipe-dsl.md` |
+| Recipe engine | `docs/specs/recipe-dsl.md` |
 | Round 1 recipe | custom-Smart-Supply variant |
 | Round 2 recipe | two phases, with the RP wait |
 | Advisory mode wiring | log the action list, execute nothing |
@@ -266,7 +266,7 @@ Real Director → `infra` → `targeting` → HWGW v1 → `factions` + `augs` + 
 `contracts` framework → `karma` + `sleeves` → `gang` → `hacknet` + `hashes` → `bladeburner` →
 HWGW v2 → ROI-bidding Director.
 
-Ordering per `claude/automation-architecture.md` §9, with corp already done.
+Ordering per `docs/automation-architecture.md` §9, with corp already done.
 
 ---
 
@@ -333,4 +333,4 @@ Deliberately built so it cannot solve anything for you.
 - **Corp state API** — exact name, and whether it reports current or next state.
 - **Dividend rate policy after round 4** — retained earnings compound; dividends buy augs now.
 - **Does bribery obsolete most of `factions`?** Confirmed present in the installed version, so
-  probably yes — revisit `claude/managers/factions.md` before building it.
+  probably yes — revisit `docs/managers/factions.md` before building it.

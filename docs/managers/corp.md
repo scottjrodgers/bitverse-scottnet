@@ -1,9 +1,9 @@
 # Manager: `corp`
 
 **Status:** designed at the architecture level; optimizers and round 3+ tuning still open.
-**Build order:** step 11 in `claude/automation-architecture.md`, but see §12 — the BN3.3 goal
+**Build order:** step 11 in `docs/automation-architecture.md`, but see §12 — the BN3.3 goal
 justifies pulling it forward.
-**Parent:** `claude/automation-architecture.md`
+**Parent:** `docs/automation-architecture.md`
 **Primary source:** *Corporation manual*, last updated 2026-07-03 (uploaded by Scott).
 Numbers below are quoted from it; the author reports round 1/2 figures were validated over
 200+ headless runs.
@@ -13,7 +13,7 @@ free in every other BitNode. Without SF3.3 those two unlocks cost **$50b each in
 which makes corporations painful everywhere else. This is a one-time investment with permanent
 payoff — it is why corp automation is worth building well now rather than later.
 
-**Current save context** (see `claude/implementation-plan.md` §0): BN3, early, holding SF3.2.
+**Current save context** (see `docs/implementation-plan.md` §0): BN3, early, holding SF3.2.
 Because `bitNodeN === 3`, the Warehouse and Office APIs **are** auto-granted this run — the $50b
 unlocks are not a concern here, only in later nodes. An existing corporation is running and is
 expendable; it must be disposed of before the round 1 recipe can run (§9, restart path).

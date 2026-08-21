@@ -1,7 +1,7 @@
 # Bitburner Automation — Architecture
 
 **Status:** design settled at the architecture level. Individual managers are scoped but not
-yet designed (see `claude/managers/*`).
+yet designed (see `docs/managers/*`).
 
 **Current save:** BN3 (early), SF1.3 / 2.3 / 3.2 / 4.3 / 5.1 / 6.1 / 9.1. See
 `implementation-plan.md` §0 for what each Source-File changes in these designs.
@@ -34,7 +34,7 @@ Once a corporation's valuation reaches **100e12**, money converts directly into 
 reputation by bribery at **1e9 per reputation point**. Reputation is the perishable bottleneck on
 augmentations, and a corporation produces money in quantities nothing else approaches. When that
 threshold is crossed, most of the rep-grinding machinery below stops mattering. See
-`claude/managers/corp.md` §1.3. *(Bribery has been added and removed across game versions —
+`docs/managers/corp.md` §1.3. *(Bribery has been added and removed across game versions —
 confirm it exists in the installed build before designing around it.)*
 
 ### The one real RAM tension
@@ -335,7 +335,7 @@ then NeuroFlux Governor to the reputation limit.
 
 | # | Component | Notes |
 |---|---|---|
-| 1 | **HWGW** | designed — see `claude/hwgw-batching-design.md` |
+| 1 | **HWGW** | designed — see `docs/hwgw-batching-design.md` |
 | 2 | **`infra`** | biggest immediate win, simplest manager |
 | 3 | **`targeting`** | consumes the HWGW doc's "spare RAM" signal |
 | 4 | **Dumb Director** | phase machine, fractional cash, RAM leases. No ROI. |
@@ -345,7 +345,7 @@ then NeuroFlux Governor to the reputation limit.
 | 8 | `gang` | |
 | 9 | `hacknet` + `hashes` | |
 | 10 | `bladeburner` | |
-| 11 | `corp` | **BN3 exception — see below.** Designed: `claude/managers/corp.md` |
+| 11 | `corp` | **BN3 exception — see below.** Designed: `docs/managers/corp.md` |
 | 12 | ROI-bidding Director | consumes the `wants` arrays managers already publish |
 
 **BN3 ordering exception.** The step-11 placement assumes a corporation costs $150b of hacking
@@ -366,19 +366,19 @@ else worthwhile never starts.
 
 **Plan and specs**
 
-- `claude/implementation-plan.md` — phased plan from design to a tested system
-- `claude/specs/manager-contract.md` — normative; state files, allowances, lifecycle
-- `claude/specs/recipe-dsl.md` — normative; the corp round-recipe engine
+- `docs/implementation-plan.md` — phased plan from design to a tested system
+- `docs/specs/manager-contract.md` — normative; state files, allowances, lifecycle
+- `docs/specs/recipe-dsl.md` — normative; the corp round-recipe engine
 
 **Designs**
 
-- `claude/hwgw-batching-design.md` — the per-target attack pipeline
-- `claude/managers/director.md`
-- `claude/managers/infra.md`
-- `claude/managers/targeting.md`
-- `claude/managers/factions.md`
-- `claude/managers/augs.md`
-- `claude/managers/corp.md` — designed; see the BN3 ordering exception below
+- `docs/hwgw-batching-design.md` — the per-target attack pipeline
+- `docs/managers/director.md`
+- `docs/managers/infra.md`
+- `docs/managers/targeting.md`
+- `docs/managers/factions.md`
+- `docs/managers/augs.md`
+- `docs/managers/corp.md` — designed; see the BN3 ordering exception below
 
 Managers not yet scoped: `contracts`, `karma`, `sleeves`, `gang`, `hacknet`, `hashes`,
 `bladeburner`.

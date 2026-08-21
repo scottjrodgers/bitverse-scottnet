@@ -1,7 +1,7 @@
 # Spec: Manager Contract
 
 **Status:** normative. Pin this before writing any manager.
-**Parent:** `claude/automation-architecture.md` §6–7.
+**Parent:** `docs/automation-architecture.md` §6–7.
 
 Every manager in the fleet obeys this contract. It exists so that managers can be written,
 tested, restarted and replaced independently, and so that no two managers can spend the same
@@ -162,7 +162,7 @@ consumes — so upgrading the Director requires no manager changes.
 
 `permanent` matters because the Director's payback gate is
 `paybackSec < timeToInstallSec || permanent == true`. See the perishable/permanent ledger in
-`claude/automation-architecture.md` §2.
+`docs/automation-architecture.md` §2.
 
 ---
 

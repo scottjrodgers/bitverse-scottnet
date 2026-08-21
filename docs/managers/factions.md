@@ -2,7 +2,7 @@
 
 **Status:** scoped, not designed.
 **Build order:** step 5 (with `augs` — together they close the install cycle).
-**Parent:** `claude/automation-architecture.md`
+**Parent:** `docs/automation-architecture.md`
 
 ---
 
@@ -90,7 +90,7 @@ the exact rep-per-dollar donation rate.*
 2. **Rep target derivation.** `augs` should publish "I want these augs, which needs this much
    rep at these factions." Decide whether `factions` derives targets itself or consumes them.
 3. **Bribery obsoletes much of this.** Once the corporation's valuation reaches **100e12**,
-   money buys reputation directly at **1e9/rep** (`claude/managers/corp.md` §1.3). If bribery
+   money buys reputation directly at **1e9/rep** (`docs/managers/corp.md` §1.3). If bribery
    exists in the installed version, this manager shrinks dramatically once `corp` is running —
    it becomes "join the right factions, then let `corp` pay for the rep." Design the rep-grinding
    machinery knowing it has a shelf life, and read `bribeAvailable` from `/state/corp.json`.

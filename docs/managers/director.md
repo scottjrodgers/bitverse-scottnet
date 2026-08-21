@@ -2,7 +2,7 @@
 
 **Status:** scoped, not designed.
 **Build order:** step 4 (after `infra` and `targeting`, before `factions`/`augs`).
-**Parent:** `claude/automation-architecture.md`
+**Parent:** `docs/automation-architecture.md`
 
 ---
 

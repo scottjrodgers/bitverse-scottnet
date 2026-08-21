@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "baseUrl": "./scripts",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strictNullChecks": false,
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": [
+    "scripts/**/*.js",
+    "scripts/NetscriptDefinitions.d.ts",
+    "test/**/*.js"
+  ],
+  "exclude": ["node_modules", "prior_scripts", "prior-configs", "src"]
+}
