@@ -16,16 +16,15 @@ Recorded so the plan's assumptions are checkable. Update this when it changes.
 
 | Fact | Value | Consequence |
 |---|---|---|
-| BitNode | **BN3**, early, little progress | cold start is the correct assumption |
-| Source-Files | **SF1.3, SF2.3, SF3.2, SF4.3, SF5.1, SF6.1, SF9.1** | see below |
-| Existing corporation | one running; **expendable** | dispose of it before running the round 1 recipe (§2) |
-| Objective | **SF3.3** | `WarehouseAPI`/`OfficeAPI` free in every other BitNode |
+| BitNode | **BN9** ("Hacktocracy") | hostile to hacking; hashes are the economy — see `bitnode-planning.md` |
+| Source-Files | **SF1.3, SF2.3, SF3.3, SF4.3, SF5.1, SF6.1, SF9.1** | see below |
+| Existing corporation | **none** | a corp here costs **$150b** — no seed money outside BN3 |
+| Objective | **BN10 with working corp automation** | the $111 quadrillion sleeve set must be earned inside BN10 |
 
 What each Source-File buys this plan:
 
-- **SF3.2 + currently in BN3** — `WarehouseAPI` and `OfficeAPI` are auto-granted **this run**, because
-  the grant condition is `bitNodeN === 3 || activeSourceFileLvl(3) === 3`. They are *not* granted in
-  other nodes until SF3.3, which is the whole point of this run.
+- **SF3.3 achieved** — `WarehouseAPI` and `OfficeAPI` are now free in **every** BitNode. The
+  original objective is complete; corporations are no longer gated behind $50b of unlocks.
 - **SF4.3** — Singularity at its lowest RAM cost. `factions`, `augs`, `karma` and `sleeves` all get
   much cheaper than their manager docs assume; treat their Singularity-RAM warnings as resolved.
 - **SF5.1** — `ns.getBitNodeMultipliers()` is available, so BitNode penalties can be **read directly**
