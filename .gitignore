@@ -158,3 +158,4 @@ desktop.ini
 # python
 src/__pycache__/
 *.pyc
+_to_delete/

@@ -1,7 +1,9 @@
 # Spec: Manager Contract
 
 **Status:** normative. Pin this before writing any manager.
-**Parent:** `docs/automation-architecture.md` §6–7.
+**Parent:** `specs/strategy.md` — the strategy layer above this one. It owns
+`/state/director.json`; where the two documents disagree about that file, strategy.md wins.
+**Why it is the way it is:** `reference/rationale.md`.
 
 Every manager in the fleet obeys this contract. It exists so that managers can be written,
 tested, restarted and replaced independently, and so that no two managers can spend the same
@@ -26,7 +28,12 @@ dollar or the same gigabyte.
 /state/<manager>.json         <- that manager writes
 /state/hwgw.<target>.json     <- that target's scheduler writes
 /logs/<manager>.log           <- append-only, that manager writes
+/memory/<manager>.json        <- that manager writes; survives an install
 ```
+
+`/state/` is wiped wholesale on an augmentation install and `/memory/` is not. A manager that
+writes a calibration, a measured constant, or a solved contract into `/state/` loses it every
+cycle. See `specs/strategy.md` §8.2 for the test.
 
 `ns.read` and `ns.write` cost **0 GB**, so state files are free relative to ports and are durable
 across script restarts.
@@ -61,7 +68,14 @@ Every `/state/<manager>.json` carries this envelope. Manager-specific data goes 
   "health": "ok",              // "ok" | "degraded" | "blocked" | "error"
   "message": null,             // human-readable reason when health != "ok"
   "spentThisRun": 0,           // cash spent since startedAt, for observability
-  "wants": [],                 // see §5
+  "held": { },                 // resource id -> amount actually in use; strategy.md §7.2
+  "candidates": [],            // see §5
+  "launch": {                  // how the watchdog restarts this manager; see §6
+    "script": "/daemon/corp.js",
+    "host": "home",
+    "threads": 1,
+    "args": []
+  },
   "detail": { }                // manager-specific; schema owned by that manager's doc
 }
 ```
@@ -101,6 +115,10 @@ Every `/state/<manager>.json` carries this envelope. Manager-specific data goes 
     "reserve":       [ { "host": "home", "gb": 32 } ]
   },
   "bodies": { "player": "crime:homicide", "sleeve0": "faction:NiteSec" },
+  "subsystems": {                  // durable per-manager enable flags; see §6a
+    "corp": { "enabled": true },
+    "hwgw": { "enabled": false }
+  },
   "directives": {
     "haltPerishableSpending": false,
     "advisoryMode": false          // global kill-switch: plan but never execute
@@ -139,30 +157,60 @@ main way new managers are validated.
 
 ---
 
-## 5. The `wants` schema
+## 5. The `candidates` schema
 
-Published by every manager from day one, **even though the v1 Director ignores it**. It costs
-nothing, gives immediate observability, and is exactly the input a future ROI-bidding Director
-consumes — so upgrading the Director requires no manager changes.
+Published by every manager from day one. A manager advertises **tiers** of what it could do with
+more resource, each priced in the resource it needs, and the Director allocates against them.
+
+**`specs/strategy.md` §6.1 defines this schema and owns it.** Reproduced here only far enough to
+write a manager against.
 
 ```jsonc
+// production candidate — a standing tier, satisfied by a lease
 {
-  "id": "pserv-upgrade-512",         // stable across ticks for the same want
-  "resource": "cash",                // "cash" | "ram"
-  "cost": 110000000,                 // dollars, or GB when resource == "ram"
-  "expectedGainPerSec": 90000,       // dollars/sec, or null if not monetisable
-  "paybackSec": 1222,                // null when permanent or non-monetisable
-  "permanent": false,                // survives an augmentation install?
-  "priority": 0.8                    // manager's own 0..1 ranking among its wants
+  "id": "hwgw:phantasy:t2",       // stable across ticks for the same tier
+  "kind": "production",
+  "tier": 2,
+  "produces": { "path": "player.money", "ratePerSec": 4.2e6 },
+  "requires": { "ram": 4096 },
+  "transition": { "startSec": 240, "stopSec": 90 },
+  "confidence": "measured"        // "measured" | "modelled" | "guessed"
+}
+
+// purchase candidate — one-shot, satisfied by an approval
+{
+  "id": "pserv-upgrade:512->1024",
+  "kind": "purchase",
+  "cost": { "money": 1.1e8 },
+  "produces": { "path": "player.money", "ratePerSec": 90000 },
+  "permanent": false              // survives an augmentation install?
 }
 ```
 
-`resource` distinguishes cash wants from RAM wants — they flow through different mechanisms
-(fractions vs leases) but appear in the same array.
+Three things a manager author needs that the schema does not state:
+
+- **`produces.path` is the entire coupling between a candidate and a goal.** A candidate whose
+  path matches no enabled goal is discarded before it is scored. Advertise the path the
+  Director's world view actually carries, not a synonym for it.
+- **Advertise tiers, not one take-it-or-leave-it bid.** A manager offering only "give me 4096 GB"
+  cannot be told it has 512. Saturation is detected by successive tiers scoring toward zero, so
+  a single-tier manager is invisible to that mechanism and will be over- or under-fed.
+- **`transition` is the only anti-thrash mechanism.** A manager that is expensive to disturb
+  advertises a large `startSec`/`stopSec` and is reallocated away from less often. There is no
+  hysteresis constant to tune — see `specs/strategy.md` §7.3.
 
 `permanent` matters because the Director's payback gate is
-`paybackSec < timeToInstallSec || permanent == true`. See the perishable/permanent ledger in
-`docs/automation-architecture.md` §2.
+`paybackSec < horizon || permanent == true` — the perishable/permanent rule from
+`reference/mechanics.md` §1, generalised in `specs/strategy.md` §6.5.
+
+`held`, in the envelope (§3), is the other half of a lease: the Director writes `granted` and
+`requested` in `director.json`, the manager writes what it is actually using. `held > requested`
+during a drain is normal, not an error.
+
+> **Superseded.** Earlier drafts defined a single `wants` array carrying `resource`, `cost`,
+> `paybackSec`, `permanent` and `priority`. It used one shape for one-shot purchases and
+> standing leases, which are different problems — a Director holding only that array cannot
+> express "reduce this consumer to 512 GB." See `reference/rationale.md` §4.
 
 ---
 
@@ -191,12 +239,74 @@ and the corp recipe engine.
 
 ### Watchdog
 
-`daemon/watchdog.js` reads every `/state/*.json` and restarts a manager when either holds:
+`daemon/watchdog.js` reads every `/state/*.json`, decides whether each manager is alive, and
+restarts the ones that are not. It never inspects `detail` and never makes a domain decision.
+It has one job, and four ways of getting it wrong.
 
-- `now - lastRun > 3 * tickMs`  (the manager is stuck or dead)
+**Liveness.** A manager is dead when either holds:
+
+- `now - lastRun > staleAfterMs`  (stuck or dead)
 - `health == "error"`
 
-The watchdog never inspects `detail` and never makes domain decisions. It has one job.
+```
+staleAfterMs = max(3 * tickMs, STALE_FLOOR_MS)          // STALE_FLOOR_MS = 10_000
+```
+
+The absolute floor exists because `3 * tickMs` alone is unusably tight for a fast loop. The corp
+daemon wakes on `ns.corporation.nextUpdate()`, whose real period is 200 ms to 2 s
+(`reference/mechanics.md` §9), which puts `3 * tickMs` well under a second — a figure a React
+re-render, an autosave, or a backgrounded tab will exceed routinely. **Restarting a healthy
+manager is strictly worse than noticing a dead one ten seconds late**, because a restart
+discards in-flight convergence and re-pays the manager's start-up cost.
+
+**Launch grace.** A manager that has just been started has not written its state file yet, so it
+is indistinguishable from one that is dead. The watchdog records `launchedAt` when it execs, and
+judges nothing until
+
+```
+now - launchedAt > max(staleAfterMs, LAUNCH_GRACE_MS)   // LAUNCH_GRACE_MS = 15_000
+```
+
+Without this the watchdog restarts every manager it starts, immediately and forever. The same
+grace applies to a manager started by hand, from its envelope's `startedAt`.
+
+**Restart metadata.** The watchdog knows a manager's name; it does not know how to run it. Each
+manager therefore publishes `launch` in its envelope (§3), and a restart is:
+
+1. `ns.kill(pid)` **first.** Two live copies both writing `/state/<manager>.json` breaks rule 2
+   of §1, and a wedged process still holds its RAM.
+2. `ns.exec(launch.script, launch.host, launch.threads, ...launch.args)`.
+3. Record `launchedAt`, bump the restart counters.
+
+A manager with no `launch` block cannot be restarted. The watchdog logs that at `error` and
+leaves it alone rather than guessing a script path.
+
+**Crash-loop backoff.** A manager that throws during start-up satisfies `health == "error"`
+forever, and an unconditional watchdog will restart it several times a second while appearing to
+work. Restarts are therefore spaced and bounded:
+
+```
+delayMs = min(BACKOFF_BASE_MS * 2 ** consecutive, BACKOFF_MAX_MS)   // 5_000, 300_000
+
+consecutive += 1 on every restart
+consecutive  = 0 once the manager has reported health != "error" for
+               GOOD_PASSES consecutive watchdog passes              // default 3
+```
+
+After `MAX_CONSECUTIVE` restarts (default 5) the watchdog **stops restarting that manager**, sets
+`gaveUp` for it, logs at `error` and toasts. A manager that cannot start needs a human; a
+watchdog hammering it converts a loud failure into a quiet one. Clearing `gaveUp` is deliberate —
+start the manager by hand, or `RELOAD` the watchdog on its port.
+
+Note that `consecutive` counts restarts, not errors. A manager that reports `error`, is
+restarted, runs healthily for an hour and then errors again has `consecutive == 1`, not 2. The
+counter is measuring "cannot start," not "is unreliable."
+
+**The watchdog's own state.** `/state/watchdog.json`, watchdog-written, one record per manager:
+`launchedAt`, `restarts`, `consecutive`, `lastRestartAt`, `gaveUp`. This is observation rather
+than knowledge, so it lives in `/state/` and is wiped on install with everything else there.
+That is correct: after an install nothing has been started yet and no manager is in a crash
+loop.
 
 ---
 
