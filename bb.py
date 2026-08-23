@@ -30,6 +30,8 @@ import logging
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
 from bb_config import load_config
 from bb_daemon import Daemon
 

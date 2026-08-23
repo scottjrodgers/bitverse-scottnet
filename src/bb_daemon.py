@@ -18,6 +18,7 @@ import asyncio
 import base64
 import json
 import logging
+import socket
 from pathlib import Path
 
 import websockets
@@ -28,6 +29,18 @@ from bb_rpc import RpcClient, RpcError, RpcTimeout
 from bb_watch import BBWatcher, iter_syncable_files
 
 log = logging.getLogger("bb_daemon")
+
+
+def _lan_ip() -> str:
+    """Best-effort guess at this machine's LAN IP (doesn't actually send traffic)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
 
 
 class Daemon:
@@ -56,10 +69,11 @@ class Daemon:
             self.rpc = None
 
     async def _run_game_server(self) -> None:
-        async with websockets.serve(self._handle_game_connection, "127.0.0.1", self.config.game_port):
+        async with websockets.serve(self._handle_game_connection, "0.0.0.0", self.config.game_port):
             log.info(
                 f"Waiting for Bitburner: in-game go to Options -> Remote API, "
-                f"set host 'localhost' and port {self.config.game_port}, then Connect"
+                f"set host '{_lan_ip()}' and port {self.config.game_port}, then Connect "
+                f"(use 'localhost' instead if Bitburner runs on this same machine)"
             )
             await asyncio.Future()  # run forever
 

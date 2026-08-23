@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ipconfig getifaddr *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 bb.py push tools/ram-costs.js)",
+      "Bash(python3 ../src/bb.py push tools/ram-costs.js)",
+      "Bash(git mv *)",
+      "Bash(python3 bb.py --help)",
+      "Bash(kill 81771)",
+      "Bash(nohup python3 bb.py serve --watch)",
+      "Bash(disown)",
+      "Read(//tmp/**)",
+      "Bash(python3 *)"
+    ]
+  }
+}
