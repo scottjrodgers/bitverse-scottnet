@@ -159,3 +159,6 @@ desktop.ini
 src/__pycache__/
 *.pyc
 _to_delete/
+
+# generated print builds
+bitburner-design-*.pdf

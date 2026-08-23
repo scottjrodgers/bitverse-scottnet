@@ -51,7 +51,8 @@ stubs) are cited in past tense by `rationale.md` and are readable at
 ```
 docs/          the doc set above
 scripts/       everything that syncs INTO the game -- JS only, no Python, no docs
-src/           Python only: the filesync tool (bb.py serve --watch)
+src/           Python only. bb.py filesync daemon; bookgen/ builds a
+               print-ready PDF of the docs (see below)
 test/          Node tests: npm test
 data/          measured game data (RAM costs, aug/faction tables)
 prior_scripts/ previous attempts, kept for reference. Not synced, not maintained.
@@ -81,6 +82,16 @@ currently defaults *into* `scripts/`, which the next sync overwrites (START-HERE
   remembered API names turned out to be wrong for v3.0.
 - **`.gitkeep` every directory.** Git carries only committed files and never empty directories;
   a prior scaffold was lost to exactly this.
+
+## Printing the docs
+
+`python3 src/bookgen/make_book.py --set argument` builds a letter-size, duplex PDF with a
+wide outer margin for handwritten notes, a TOC with real page numbers, and running heads
+carrying the current section. `--set math` adds the two derivation documents; `--set all`
+takes everything. Needs `pip install weasyprint markdown`. Output is gitignored.
+
+The builder never modifies the source documents. Code lines too wide for the text column are
+re-wrapped at a comma for print only.
 
 ## Working on the docs
 
