@@ -1,7 +1,8 @@
 # Spec: Recipe DSL
 
 **Status:** normative for the corp round recipes. Pin before writing round 1.
-**Parent:** `docs/managers/corp.md` §2, §6.
+**Domain reference:** `managers/corp.md` §2, §6 (reference, not normative).
+**Operational contract:** `specs/manager-contract.md`.
 
 A "recipe" is the corp automation's representation of a round setup — the round 1 and round 2
 playbooks from the manual. It exists to solve three problems at once:
@@ -42,6 +43,7 @@ same shape as the HWGW prep loop.
                         "cities": ["Sector-12","Aevum","Chongqing","New Tokyo","Ishima","Volhaven"] }
 { "kind": "warehouse",  "division": "Agriculture", "cities": "all", "level": 17 }
 { "kind": "officeSize", "division": "Agriculture", "cities": "all", "size": 8 }
+{ "kind": "hire",       "division": "Agriculture", "cities": "all", "count": "fill" }
 { "kind": "jobs",       "division": "Agriculture", "cities": "all",
                         "jobs": { "Operations": 3, "Engineer": 1, "Business": 2, "Management": 2 } }
 { "kind": "upgrade",    "name": "Smart Storage", "level": 25 }
@@ -59,6 +61,21 @@ same shape as the HWGW prep loop.
 the manual's own convention ("Warehouse level 6 means upgrading warehouse 5 times", "boost
 material numbers are the total quantities after buying").
 
+### `costsBudget`
+
+Every step carries `costsBudget`, defaulting to `true`. A step with `costsBudget: false` is
+**never gated on the budget and never contributes to `spend`** — it is constrained by something
+other than money. Two kinds set it:
+
+| Kind | Real constraint | Why not budget |
+|---|---|---|
+| `boost` | warehouse space | boost materials are bought on credit; the budget can never block them (§5) |
+| `hire` | office size | `hireEmployee` costs nothing at the moment of hiring; employees cost salary as an ongoing expense against corp revenue, which no recipe budget models |
+
+Gating either on a budget it does not consume is a live bug in earlier drafts: a small budget
+silently skipped the boost step, producing a corporation with no boost materials and no
+`degraded` flag to show for it.
+
 ---
 
 ## 3. Degradation
@@ -73,6 +90,11 @@ it. **This is the whole BitNode-robustness mechanism.**
 | `block` | stop the recipe here and report `blocked` | division creation, unlocks, anything later steps depend on |
 
 Default is `partial` for anything level-based and `block` for anything structural.
+
+`degrade` is meaningless on a step with `costsBudget: false` — such a step is never reached by
+the budget branch at all (§2, §4). A `boost` step degrades by refitting into the space that
+exists; a `hire` step degrades by hiring into the office that exists. Both set `degraded` when
+they fall short of their literal targets, so the recipe status still tells the truth.
 
 A recipe that ran fully `partial` in a penalized node still yields a working corporation — just a
 smaller one. That is the required "graceful, not optimal" behaviour.
@@ -94,6 +116,11 @@ plan(recipe, snapshot, budget):
 
         if step.kind == "waitFor":
             return { actions, status: "waiting", blockedOn: step, spend }
+
+        if step.costsBudget == false:            # boost, hire -- not money-constrained
+            actions += s.actions                 # s.cost is not added to spend
+            if s.constrained: degraded = true    # e.g. warehouse too small to refit into
+            continue
 
         if s.cost <= budget - spend:
             actions += s.actions
@@ -124,12 +151,39 @@ Notes:
 
 ---
 
-## 5. Two steps that need care
+## 5. Three steps that need care
+
+### `hire`
+
+**Nothing else in the recipe hires anybody.** `officeSize` buys desks; `jobs` moves people
+between roles. Without a `hire` step the first recipe that ever runs reaches `jobs` with an
+office full of nobody and throws — `setJobAssignment` moves employees out of Unassigned and
+throws when there are too few (`reference/mechanics.md` §11).
+
+```jsonc
+{ "kind": "hire", "division": "Agriculture", "cities": "all",
+  "count": "fill", "costsBudget": false }
+```
+
+`count` is `"fill"` (hire until `numEmployees == office.size`, the normal case) or an explicit
+integer. Satisfied when `numEmployees >= target`.
+
+Three ordering rules, all of them load-bearing:
+
+1. **`hire` comes after `officeSize`.** You cannot hire past capacity, and a `hire` evaluated
+   against an office that has not been expanded yet silently hires too few.
+2. **`hire` comes before `jobs`.** This is the whole reason the step exists.
+3. **Hiring is not reversible.** There is no counterpart to `hireEmployee` in the API, and every
+   employee draws salary from corp revenue forever. `count: "fill"` on an office that a later
+   step then shrinks is a permanent tax. Prefer expanding once to the round's final size.
+
+New hires land in **Unassigned**, which is exactly what `jobs` expects.
 
 ### `jobs`
 
-`setAutoJobAssignment` moves employees from Unassigned and **throws** if there are not enough. It
-also only takes effect at the **next cycle's START state**. So the emitted actions are always:
+`setJobAssignment` moves employees from Unassigned and **throws** if there are not enough — hence
+`hire` above. It also only takes effect at the **next cycle's START state**. So the emitted
+actions are always:
 
 ```
 1. set every job to 0
@@ -137,6 +191,9 @@ also only takes effect at the **next cycle's START state**. So the emitted actio
 ```
 
 and the step should not be considered satisfied until a full cycle has elapsed after issuing it.
+
+*(The name is `setJobAssignment`. `setAutoJobAssignment` was renamed in v3.0 and appears in older
+drafts — `reference/mechanics.md` §11 tracks the drift.)*
 
 ### `boost` — and why it self-clears
 
@@ -173,15 +230,41 @@ So `boost` carries an extra field:
 ```jsonc
 { "kind": "boost", "division": "Agriculture", "cities": "all",
   "targets": { "AI Cores": 1562, "Hardware": 1791, "Real Estate": 98470, "Robots": 0 },
-  "refitIfSpaceDiffers": true }
+  "costsBudget": false,
+  "refitIfSpaceDiffers": true,
+  "reserveFraction": 0.16 }
 ```
 
 Engine behaviour when `refitIfSpaceDiffers` is set:
 
 1. Compute the space the literal `targets` require.
-2. If it fits the actual warehouse, use them verbatim — this is the normal, tested path.
-3. If it does not, **discard them and re-run the closed-form boost optimizer** against the actual
-   available space, using that industry's coefficients and material sizes.
+2. If it fits the actual warehouse **with `reserveFraction` still free**, use them verbatim —
+   this is the normal, tested path.
+3. If it does not, **discard them and re-run the closed-form boost optimizer** against
+   `warehouseSize * (1 - reserveFraction)`, using that industry's coefficients and material
+   sizes.
+
+#### `reserveFraction` is required, and it is not a constant
+
+The optimizer fills whatever space it is given. Handed the whole warehouse it returns a boost
+vector occupying 100% of it, leaving nowhere for produced output to accumulate — which causes
+precisely the congestion `refitIfSpaceDiffers` exists to prevent. So the reserve must be an
+input, not a default.
+
+It is also **not the same number in every round.** Back-computed from the manual's own tested
+vectors against the warehouse sizes those rounds build:
+
+| Round | Reserve |
+|---|---|
+| 1 | **0.16** |
+| 2 | **0.24** |
+
+A single hardcoded reserve therefore over-fills one round or under-fills the other. `boost`
+steps carry their own, and `reserveFraction` is **mandatory whenever `refitIfSpaceDiffers` is
+`true`** — an absent value is a spec violation, not a cue to guess 0.16.
+
+*(Round 3+ has no tested vector to back-compute from. Treat the round-2 figure as a starting
+point and measure, rather than extrapolating the trend — two points do not establish one.)*
 
 The `warehouse` step's `expectSize` field exists to make this checkable: it records the warehouse
 size the recipe assumed, so a mismatch is detectable rather than silent. Those values also double
@@ -219,5 +302,13 @@ Because `plan` is pure, the test suite is synthetic snapshots in, expected actio
 - **Small budget** → `degraded`, with `partial` steps truncated correctly
 - **`waitFor` unmet** → `waiting`, and no steps after it appear in the actions
 - **Penalized-node budget** (e.g. 20% of BN3 funds) → still produces a coherent, ordered subset
+- **Zero budget, `boost` and `hire` present** → both still emit actions and neither adds to
+  `spend` *(the `costsBudget` regression — the bug this field was added to kill)*
+- **Empty offices** → `hire` emits before `jobs`, and `jobs` never appears ahead of it
+- **Office already full** → `hire` emits nothing *(idempotency, second most important test)*
+- **Warehouse smaller than the recipe assumed** → `boost` refits against
+  `size * (1 - reserveFraction)` rather than the literal targets, and reports `degraded`
+- **`refitIfSpaceDiffers: true` with no `reserveFraction`** → rejected as an invalid recipe, not
+  silently defaulted
 
 Round 1 and round 2 recipes are then just data, and the engine is tested once.
