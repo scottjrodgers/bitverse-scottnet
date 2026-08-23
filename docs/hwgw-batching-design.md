@@ -382,11 +382,36 @@ but the fix is different (stop the other script, not re-prep). No cheap detectio
 One scheduler per target. Two schedulers on the same host will both compute free RAM and both
 conclude it's theirs.
 
-**Rule: a scheduler never queries free RAM.** It receives a fixed GB budget as a launch arg
-and self-limits by tracking `batchRam × inFlight` against it. Whoever launches schedulers owns
-the partitioning — that becomes layer 2's job.
+**Rule: a scheduler never queries free RAM.** It self-limits by tracking
+`batchRam × inFlight` against a budget it is given. Whoever hands out those budgets owns the
+partitioning.
 
 Still handle `exec` returning 0. Budgets can be wrong.
+
+### The budget is a Director lease, not a launch arg
+
+That budget now arrives as a **lease** from the Director (`specs/strategy.md` §7.2), which
+changes three things about this section:
+
+- **It is not fixed for the process's lifetime.** A launch arg is written once; a lease is three
+  numbers the Director can move at any time. `granted` is the ceiling the scheduler may use,
+  `requested` is what the Director wants it to converge to.
+- **The scheduler writes `held` itself**, in its own state file — what it is actually using right
+  now. The Director never writes it. `held > requested` during a shrink is a normal transient,
+  not an error.
+- **Shrinking is the drain protocol in §7, reused.** The Director lowers `requested` and does not
+  pre-empt anything; the scheduler stops launching new batches and lets in-flight work land, then
+  lowers `held`. Nothing in flight is ever corrupted, and the Director stays ignorant of what
+  "in flight" means. See `reference/rationale.md` §5 for why revocation landed at this boundary
+  rather than inside the pipeline.
+
+The other half of the contract is what the scheduler advertises upward. It publishes
+`candidates` — **tiers**, not one bid (`specs/manager-contract.md` §5). A scheduler offering only
+"give me 4096 GB" cannot be told it has 512, and is invisible to the allocator's saturation
+detection. Its `transition` field is `{ startSec, stopSec }`: the prep window in §6 and the drain
+window in §7, in seconds. That is what makes a well-prepped target sticky — the Director will not
+move RAM away from it unless the gain pays back the re-prep. There is no hysteresis constant
+here, and none should be added.
 
 ---
 
