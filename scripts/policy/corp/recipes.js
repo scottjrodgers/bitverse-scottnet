@@ -3,7 +3,7 @@
  * Corp round recipes as data.
  *
  * These are the manual's tested numbers (200+ headless runs) expressed in the
- * recipe DSL: claude/specs/recipe-dsl.md
+ * recipe DSL: docs/specs/recipe-dsl.md
  *
  * NOTHING HERE IS LOGIC. The engine interprets these; see the DSL spec.
  * Every numeric field is a TARGET, never an increment.

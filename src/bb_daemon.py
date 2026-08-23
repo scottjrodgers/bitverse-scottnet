@@ -173,7 +173,9 @@ class Daemon:
             out_dir = Path(args["out_dir"]).resolve() if args.get("out_dir") else self.config.directory
             written = []
             for entry in files:
-                out = out_dir / entry["filename"]
+                # lstrip("/"): a leading slash would make this absolute and
+                # escape out_dir entirely. See bb_paths.to_local_path().
+                out = out_dir / entry["filename"].lstrip("/")
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_text(entry["content"], encoding="utf-8")
                 written.append(str(out))
