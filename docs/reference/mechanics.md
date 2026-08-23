@@ -456,6 +456,18 @@ prose, so they are recorded here.
 **`hireEmployee` exists** (20 GB) — a recipe engine that assigns jobs without hiring will throw,
 since `setJobAssignment` moves employees from Unassigned and throws when there are too few.
 
+```typescript
+hireEmployee(divisionName: string, city: CityName,
+             employeePosition?: CorpEmployeePosition): boolean
+```
+
+`employeePosition` defaults to `"Unassigned"`. Hiring deducts **no corporation funds** —
+`OfficeSpace.hireRandomEmployee` performs no transaction; employees cost salary against revenue
+instead. At capacity it **returns `false` rather than throwing** (`atCapacity()` is
+`numEmployees >= size`). **There is no inverse**: `OfficeSpace` exposes nothing that decreases
+`numEmployees`, so hiring is irreversible. Source `src/Corporation/OfficeSpace.ts`,
+`markdown/bitburner.officeapi.hireemployee.md`.
+
 Two behavioural changes worth knowing: `ns.nuke`, `ns.brutessh` and the other port-openers no
 longer throw when the program is missing or ports are insufficient; and `.script` files can no
 longer be run at all, only `.js`.

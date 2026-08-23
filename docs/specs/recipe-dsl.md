@@ -168,16 +168,37 @@ throws when there are too few (`reference/mechanics.md` §11).
 `count` is `"fill"` (hire until `numEmployees == office.size`, the normal case) or an explicit
 integer. Satisfied when `numEmployees >= target`.
 
+Verified against `bitburner-src/dev`:
+
+```typescript
+hireEmployee(divisionName: string, city: CityName,
+             employeePosition?: CorpEmployeePosition): boolean   // 20 GB
+```
+
+- **`employeePosition` is optional and defaults to `"Unassigned"`** — which is exactly what
+  `jobs` expects, so the plain call is the right one.
+- **Hiring deducts no corporation funds.** `OfficeSpace.hireRandomEmployee` updates employee
+  counts and statistics and performs no transaction. Employees cost salary against revenue,
+  which no recipe budget models. Hence `costsBudget: false`.
+- **At capacity it returns `false`; it does not throw.** `atCapacity()` is
+  `numEmployees >= size`. So a `hire` step against an office that degraded to a smaller size
+  fails softly, one call at a time — check the return value and mark the step `degraded` rather
+  than assuming the hires landed.
+
 Three ordering rules, all of them load-bearing:
 
 1. **`hire` comes after `officeSize`.** You cannot hire past capacity, and a `hire` evaluated
-   against an office that has not been expanded yet silently hires too few.
+   against an office not yet expanded silently hires too few — quietly, since the failure is a
+   `false` return rather than an exception.
 2. **`hire` comes before `jobs`.** This is the whole reason the step exists.
-3. **Hiring is not reversible.** There is no counterpart to `hireEmployee` in the API, and every
-   employee draws salary from corp revenue forever. `count: "fill"` on an office that a later
-   step then shrinks is a permanent tax. Prefer expanding once to the round's final size.
+3. **Hiring has no inverse.** `OfficeSpace` exposes nothing that decreases `numEmployees`, and
+   every employee draws salary from corp revenue forever. `count: "fill"` on an office a later
+   step shrinks is a permanent tax. Expand once, to the round's final size.
 
-New hires land in **Unassigned**, which is exactly what `jobs` expects.
+*(`hireEmployee`'s optional position argument would let a recipe hire straight into roles and
+skip the set-to-0-then-set-to-target dance below. Not adopted: `jobs` still has to rebalance
+existing employees, so the general path is needed anyway, and having one mechanism rather than
+two is worth more than the saved calls.)*
 
 ### `jobs`
 
