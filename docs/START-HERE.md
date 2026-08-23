@@ -187,10 +187,16 @@ Game mechanics were verified against `bitburner-official/bitburner-src` @ `dev`,
 
 Two channels carry this project between machines and sessions:
 
-- **This git repo** — code, docs, configs. The portable substrate.
-- **The attached claude.ai project** — the same docs plus the Corporation manual PDF. Follows
-  the account, not the machine, so any chat session on any computer can read it.
+- **This git repo** — code, docs, configs. **Canonical.** All design work lands here first.
+- **The attached claude.ai project** — a mirror of `docs/` under `claude/`, for sessions that
+  cannot reach a filesystem (a phone, another machine). It follows the account rather than the
+  machine. It does **not** carry `manuals/Corporation-manual.pdf`.
 
-What does **not** transfer is the conversation history — the reasoning behind each decision.
-`reference/rationale.md` is where that goes, and keeping it current is the handoff. §3 above is
-the index into it.
+The mirror is a copy, not a second source of truth. A session that can read the repo should read
+the repo; where the two disagree the repo is right and the mirror is stale. Never resolve a
+disagreement by editing the mirror, and never add a document that exists only there —
+`claude/SYNC-STATUS.md` in the project records the commit it was last synced from.
+
+What does **not** transfer through either channel is the conversation history — the reasoning
+behind each decision. `reference/rationale.md` is where that goes, and keeping it current is the
+handoff. §3 above is the index into it.
