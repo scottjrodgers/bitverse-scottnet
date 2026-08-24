@@ -35,6 +35,8 @@ ALL = {
         "The per-target hacking pipeline: timing model, sizing, prep, drain, leases."),
     "reference/mechanics.md": ("Game Mechanics", "reference",
         "Verified game facts with sources. Multipliers, install ledger, RAM, API drift."),
+    "review-2026-08.md": ("Review 2026-08", "working",
+        "Audit of the doc set: eight open questions, then 57 findings."),
     "managers/corp.md": ("corp", "reference",
         "Corporation domain: cycle sync, Smart Supply, Market-TA2, round playbooks."),
 }
@@ -47,6 +49,8 @@ SETS = {
     "math":     ["START-HERE.md", "specs/strategy.md", "specs/manager-contract.md",
                  "reference/rationale.md", "specs/recipe-dsl.md",
                  "hwgw-batching-design.md"],
+    # the audit on its own, for deciding the eight questions on paper
+    "review":   ["review-2026-08.md"],
     "all":      ["START-HERE.md", "specs/strategy.md", "specs/manager-contract.md",
                  "reference/rationale.md", "specs/recipe-dsl.md",
                  "hwgw-batching-design.md", "reference/mechanics.md",
@@ -60,6 +64,9 @@ TITLES = {"argument": ("The Strategy<br>Layer",
           "math":     ("The Strategy Layer<br>&amp; the Derivations",
                        "The argument, plus the two documents whose numbers are worth "
                        "checking by hand."),
+          "review":   ("Doc-Set Audit<br>August 2026",
+                       "Eight questions that need a decision, then the "
+                       "fifty-seven findings behind them."),
           "all":      ("bitverse-scottnet<br>Design Set",
                        "Every design document in the repository, in reading order.")}
 

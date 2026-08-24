@@ -162,6 +162,7 @@ _to_delete/
 
 # generated print builds
 bitburner-design-*.pdf
+bitburner-design-review-*.pdf
 
 # bookgen build cache and renderer deps
 .bookgen-cache/
