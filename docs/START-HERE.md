@@ -119,6 +119,11 @@ Live and unresolved. The first two block work.
 
 `specs/strategy.md` §14 and `managers/corp.md` §12 carry their own, narrower lists.
 
+**`review-2026-08.md` supersedes this section for detail.** A three-pass audit of the doc set
+found 57 items: contradictions, normative terms that cannot be implemented without guessing,
+and duplication. Its Part 1 is eight questions that need a decision before the rest can be
+fixed. It is a working document and gets retired into `reference/rationale.md` §13 when closed.
+
 ---
 
 ## 6. Doc map
@@ -141,6 +146,7 @@ Live and unresolved. The first two block work.
 | `managers/corp.md` | reference | corporation domain. Cycle sync, Smart Supply, Market-TA2, round playbooks, the round 3+ allocator, formulas |
 | `hwgw-batching-design.md` | reference | the per-target hacking pipeline. Timing model, batch sizing, prep, drain, RAM leases |
 | `manuals/Corporation-manual.pdf` | source | external, last updated 2026-07-03 |
+| `review-2026-08.md` | working | audit of this doc set: 57 findings, 8 open questions. Retire when closed |
 
 Nothing else is scoped, and that is deliberate: `contracts`, `karma`, `gang`, `hacknet`,
 `hashes`, `bladeburner` and `sleeves` were all designed in the previous doc set and none was
