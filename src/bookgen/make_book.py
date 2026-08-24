@@ -14,6 +14,7 @@ column are re-wrapped at a comma for print only; see rewrap_code().
 import io, os, re, html, argparse, subprocess, datetime
 import markdown
 from weasyprint import HTML, CSS
+from prerender import Prerenderer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -65,11 +66,20 @@ TITLES = {"argument": ("The Strategy<br>Layer",
 ap = argparse.ArgumentParser()
 ap.add_argument("--set", default="argument", choices=sorted(SETS))
 ap.add_argument("-o", "--out", default=None)
+ap.add_argument("--inline-math", action="store_true",
+                help="also treat $...$ as math. OFF by default: prose like "
+                     "'$150b' and '$111 quadrillion' is indistinguishable from "
+                     "an inline equation, and these documents are full of it.")
+ap.add_argument("--no-figures", action="store_true",
+                help="skip math and diagram pre-rendering entirely")
 args_cli = ap.parse_args()
 
 DOCS = [(p,) + ALL[p] for p in SETS[args_cli.set]]
 OUT = args_cli.out or os.path.join(
     REPO, f"bitburner-design-{args_cli.set}.pdf")
+
+pre = None if args_cli.no_figures else Prerenderer(
+    os.path.join(REPO, ".bookgen-cache"), inline_math=args_cli.inline_math)
 
 md = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists",
                                    "attr_list", "toc", "md_in_html"],
@@ -112,6 +122,8 @@ for i, (path, title, kind, blurb) in enumerate(DOCS, 1):
     text = io.open(f"{SRC}/{path}", encoding="utf-8").read()
     # strip the leading H1 -- we render our own with a stable id
     body = re.sub(r"\A#\s+.*?\n", "", text, count=1)
+    if pre:
+        body = pre.process(body)          # math + diagrams -> tokens, before Markdown
     body = rewrap_code(body)
     # give every h2 a deterministic id we can point the TOC at
     seen = []
@@ -120,6 +132,8 @@ for i, (path, title, kind, blurb) in enumerate(DOCS, 1):
         return f"## {m.group(1)} {{: #{s} }}\n"
     body = re.sub(r"^##\s+(.+?)\s*$", h2id, body, flags=re.M)
     inner = md.convert(body)
+    if pre:
+        inner = pre.splice(inner)         # tokens -> inline SVG, after Markdown
     # small tables are kept whole: a repeated <thead> whose first cell is
     # empty (several of these tables have one) reads as a broken header
     def tight(m):

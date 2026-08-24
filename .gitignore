@@ -162,3 +162,8 @@ _to_delete/
 
 # generated print builds
 bitburner-design-*.pdf
+
+# bookgen build cache and renderer deps
+.bookgen-cache/
+src/bookgen/node_modules/
+src/bookgen/package-lock.json

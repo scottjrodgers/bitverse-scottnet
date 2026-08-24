@@ -90,8 +90,14 @@ wide outer margin for handwritten notes, a TOC with real page numbers, and runni
 carrying the current section. `--set math` adds the two derivation documents; `--set all`
 takes everything. Needs `pip install weasyprint markdown`. Output is gitignored.
 
+`$$...$$` math and ` ```mermaid ` / ` ```dot ` fences are pre-rendered to inline SVG, so
+they can be used in any doc here. Requires `npm install` in `src/bookgen/`; without it the
+build still succeeds and prints the source in a red block instead. Inline `$...$` is opt-in
+(`--inline-math`) because these documents are full of prose like `$150b`.
+
 The builder never modifies the source documents. Code lines too wide for the text column are
-re-wrapped at a comma for print only.
+re-wrapped at a comma for print only. `src/bookgen/README.md` documents the whole thing,
+including three mermaid failure modes that are silent rather than loud.
 
 ## Working on the docs
 

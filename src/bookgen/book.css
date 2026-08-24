@@ -261,3 +261,70 @@ h3 { bookmark-level: 3; bookmark-label: content(); }
 h4 { bookmark-level: none; }
 .cover h1.title { bookmark-level: none; }
 .howto h2, .toc h2 { bookmark-level: 1; }
+
+/* ── figures: pre-rendered math and diagrams ─────────────────────────────
+   Both arrive as inline SVG from src/bookgen/prerender.py. WeasyPrint has no
+   MathML and no JavaScript, so nothing here is live -- it is all geometry by
+   the time the stylesheet sees it. */
+
+figure {
+  margin: 1.05em 0 1.15em 0;
+  text-align: center;
+  break-inside: avoid;                 /* a split diagram is worse than a gap */
+}
+figure svg { max-width: 100%; height: auto; }
+
+figcaption {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 8pt;
+  line-height: 1.4;
+  color: #55595f;
+  margin-top: 6pt;
+  text-align: left;
+}
+figcaption code { font-size: 0.92em; }
+
+/* Diagrams. mermaid emits its own width; cap it to the measure so a wide
+   graph shrinks rather than running into the notes margin. */
+figure.dia svg { width: 100%; max-width: 4.9in; height: auto; }
+figure.dia.wide svg { max-width: 100%; }
+figure.dia { counter-increment: figure; }
+figure.dia figcaption::before {
+  content: "Fig. " counter(figure) ". ";
+  font-weight: 700; color: #16181c;
+}
+
+/* Display equations, numbered on the outer edge. Counters do the numbering
+   that LaTeX would; cross-references would need target-counter and are not
+   built. */
+figure.eqn {
+  display: flex; align-items: center; justify-content: center;
+  counter-increment: eqn;
+  margin: 1.15em 0;
+  page-break-inside: avoid;
+}
+figure.eqn::after {
+  content: "(" counter(eqn) ")";
+  font-family: "Bitstream Charter", serif;
+  font-size: 9.5pt; color: #55595f;
+  margin-left: auto; padding-left: 12pt;
+  flex: 0 0 auto;
+}
+figure.eqn svg { flex: 0 1 auto; }
+
+.doc { counter-reset: figure eqn; }    /* both restart per document */
+
+/* Inline math sits on the baseline: MathJax stamps vertical-align on the SVG
+   in ex units and WeasyPrint honours it, so do not override it here. */
+.imath svg { max-width: none; }
+
+/* Fallbacks. If node or mermaid is unavailable the source is printed rather
+   than dropped -- a missing diagram must be visible, not silent. */
+.math-fallback, .fig-fallback {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 7.4pt;
+  background: #fdf3f3;
+  border-left: 2.2pt solid #c46a6a;
+  padding: 5pt 8pt;
+  white-space: pre-wrap;
+}
