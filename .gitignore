@@ -168,3 +168,4 @@ bitburner-design-review-*.pdf
 .bookgen-cache/
 src/bookgen/node_modules/
 src/bookgen/package-lock.json
+docs/print/
