@@ -406,7 +406,7 @@ changes three things about this section:
   rather than inside the pipeline.
 
 The other half of the contract is what the scheduler advertises upward. It publishes
-`candidates` — **tiers**, not one bid (`specs/manager-contract.md` §5). A scheduler offering only
+`candidates` — **tiers**, not one bid (`specs/strategy.md` §6.1). A scheduler offering only
 "give me 4096 GB" cannot be told it has 512, and is invisible to the allocator's saturation
 detection. Its `transition` field is `{ startSec, stopSec }`: the prep window in §6 and the drain
 window in §7, in seconds. That is what makes a well-prepped target sticky — the Director will not

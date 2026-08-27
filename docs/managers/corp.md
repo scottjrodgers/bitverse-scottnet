@@ -2,7 +2,7 @@
 
 **Status:** reference, not normative. This is the corporation domain knowledge — cycle
 mechanics, formulas, round playbooks, and the manual's tested numbers. The normative rules for
-how the manager *behaves* are in `specs/manager-contract.md`; the round recipes are governed by
+how the controller *behaves* are in `specs/data-contracts.md`; the round recipes are governed by
 `specs/recipe-dsl.md`; resource allocation is governed by `specs/strategy.md`. Where any of
 those disagree with this document, they win.
 

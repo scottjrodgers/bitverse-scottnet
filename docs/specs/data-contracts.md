@@ -13,8 +13,9 @@ that appears in `strategy.md` with no entry here is unimplemented.
 
 **Reasoning:** `reference/rationale.md`. This document states rules, not arguments.
 
-**Provisional content.** §16 lists every place this document decides something no normative
-document had decided. Read it before treating this as settled.
+**§16** records every place this document decided something `strategy.md` had not. All of it was
+accepted and folded into `strategy.md` on 2026-08-26; the table is kept as the record of what
+changed and why, not as a list of pending work.
 
 ---
 
@@ -41,7 +42,7 @@ document had decided. Read it before treating this as settled.
 | `/config/` | declared intent | human, CLI, Director, controllers | survives; goals pruned | survives |
 | `/data/` | static pre-generated reference tables | offline tooling only | survives | survives |
 | `/state/` | observations | Director, controllers, watchdog | **deleted in full** | rebuilt |
-| `/memory/` | measured knowledge | controllers, install callback | survives | survives |
+| `/memory/` | measured knowledge | controllers, install callback, bootstrap script | survives | survives |
 | `/logs/` | append-only history | any writer, own file only | survives | survives |
 
 The test for each, in one line:
@@ -290,36 +291,22 @@ Hard boundaries. A directive set violating any constraint is invalid and must no
 | | `maxPaybackSec` | `sec` | yes | — | tightens the horizon gate for that class |
 | `disable` | `controller` | `id` | yes | — | its candidates are never ranked; its leases drain via `requested → 0` |
 
-**Two `reserve` constraints on the same resource take the maximum, never the sum.** Two people
-expressing the same floor must not double it. A `fraction` and an `absolute` reserve on one
-resource are resolved to absolute first, then maximised. Reserves with different `against` values
-do not interact: an `against: null` floor and an `against: "hacking"` ceiling are separate
-quantities and are never combined.
-
-**`reserve.resource` accepts either form** (§B.5.1), and the two are applied at different
-points:
-
-| Form | Example | Applied |
-|---|---|---|
-| grant form or glob | `ram:home`, `ram:*` | subtracted from **each matched instance** in the inventory, before bin-packing; their total becomes the round's `reserved` |
-| request form | `money`, `ram` | subtracted from the round's `available` directly |
-
-An `against` reserve is neither: it is a **per-consumer ceiling** applied during ranking, and it
-never reduces `available` for anyone else.
+`reserve.resource` accepts either the request form or the grant form, and globs
+(`money`, `ram`, `ram:home`, `ram:*`). **The arithmetic — max-not-sum, per-instance fractions,
+where each form applies, and `against` as a per-consumer ceiling — is `strategy.md` §4.1b.**
+Only the field types are settled here.
 
 **`against` reads as a ceiling, not an exclusive grant.** `hacking-cap` above means *hacking may
 hold at most nine tenths of each host*, not *nine tenths of each host is set aside for hacking*.
 The opposite reading is equally natural in English and inverts the example, so it is stated here
-rather than left to intuition. `strategy.md` §4.1 gives the same constraint at `0.5`, where the
-two readings coincide numerically and the ambiguity is invisible; the value is `0.9` here so that
-the worked scenario distinguishes them.
+rather than left to intuition. The example is `0.9` and not `0.5` because at `0.5` the ceiling
+and set-aside readings coincide numerically and the ambiguity is invisible.
 
 **`disable` vs. `pause` vs. `advisoryMode`** — three switches at three pipeline positions:
 
 | Switch | Acts at | Resources | Home |
 |---|---|---|---|
 | `disable` | allocation | returned to the pool | `constraints.json` |
-
 | `pause` | execution | **held** | `control.json` |
 | `advisoryMode` | execution | held; Director allocates and logs normally | `control.json` |
 
@@ -438,7 +425,7 @@ every active pause on its default view. `null` expiry is permitted and is the da
 
 `advisoryMode` suppresses *execution* only. It never suppresses the Director's allocation or its
 decision record — a run that showed nothing about what it would have decided would defeat the
-purpose. (This is the composition `strategy.md` SQ-7 leaves open; see §16.)
+purpose. `strategy.md` §8.2a states the full composition; this is its execution half.
 
 ### B.4.1 Answer
 
@@ -592,6 +579,11 @@ calls no game API; a path nobody publishes does not exist.
 | Sub-instances | `provides` on a `<controller>.<instance>.json` file is ignored — the parent aggregates |
 | Type | flat map, dotted keys, scalar values only. No nesting; `player.money`, not `player: {money}` |
 
+**The `player.*` namespace belongs to a `stats` controller.** It publishes money, karma, skills
+and reputation, publishes no candidates, and consumes no resources — a manifest domain with no
+allocator role. Without it no `threshold` condition on the player can be evaluated, which is why
+it exists before any domain that might want one.
+
 `threshold` conditions require a `num`; `equals` accepts any of the three types.
 
 **This is the same gap that `/state/infra.json` fills for the fleet inventory, generalised.**
@@ -608,7 +600,7 @@ Three kinds. Common fields first.
 |---|---|---|---|---|---|
 | `id` | `id` | unique per controller, **stable across ticks** | yes | — | |
 | `kind` | `enum(production,purchase,assignment)` | | yes | — | |
-| `group` | `id` | | no | **the controller id** | **at most one candidate per group is granted per resource per round** |
+| `group` | `id` | | no | **kind-dependent — see below** | **at most one candidate per group is granted per resource per round** |
 | `produces` | `{path, ratePerSec, unit?}` | `path`, `num` ≥ 0, `resId` | yes | — | `path` must equal a goal's `condition.path`. `unit` names the resource the path is **denominated in**, when it is one |
 | `confidence` | `enum(measured,modelled,guessed)` | | yes | — | annotation only; never affects score |
 | `action` | `str` | | no | absent | the join key for `forbid` (§B.2.1) |
@@ -678,8 +670,7 @@ measured must not be invented; advertise fewer tiers instead.
 |---|---|
 | `cost` | the amount the candidate requires of **the resource this round is keyed on** (§B.5.1) |
 | scoring across rounds | a multi-resource candidate is ranked separately in each round it appears in; `atomic: true` means it must win all of them or none |
-| scarcest | the required resource with the highest `required / (available − reserves)` |
-| `cost == 0` | `score = Infinity`. Ties among equal scores — `Infinity` included — break by `strategy.md` §6.5 step 6 (goal order, then preference weight, then candidate id) and by nothing else |
+| `cost == 0` | `score = Infinity`. Ties among equal scores — `Infinity` included — break by `strategy.md` §6.5 step 7 (goal order, then preference weight, then candidate id) and by nothing else |
 | `R == 0, ΔR > 0` | `gain = Infinity` (zero-rate rule); ranks above every finite improvement |
 
 **"Materially changed"** — the §6.7 reallocation trigger, so it must be a number: the set of
@@ -698,7 +689,7 @@ dedup, no lost messages.
 | `kind` | `str` | yes | — | free, e.g. `irreversible`, `destructiveRevocation` |
 | `options` | `str[]` | yes | — | ≥ 2, distinct |
 | `recommend` | `str` | no | absent | one of `options` |
-| `default` | `str` | **yes** | — | one of `options`. Without it, `auto` and `ask` are unavailable to this point |
+| `default` | `str` | no | absent | one of `options`. **Absent ⇒ the point may only be dialled `block`** — `auto` and `ask` both require a default |
 | `dial` | `enum(ask,block)` | yes | — | resolved from `control.json`, copied here for the CLI. `auto` cannot appear: such a point publishes nothing |
 | `since` | `ms` | yes | — | |
 | `expiresAt` | `ms` \| `null` | yes | — | when `ask` will take the default; `null` for `block` |
@@ -899,7 +890,7 @@ and appears in the next `/logs/observations.jsonl` sample anyway.
 
 ### Ranked entry
 
-**`ranked` is in descending `score` order**, ties broken per `strategy.md` §6.5 step 6. It carries
+**`ranked` is in descending `score` order**, ties broken per `strategy.md` §6.5 step 7. It carries
 every candidate considered — granted, excluded, displaced, reserved and rejected alike. Reading
 the array top to bottom reproduces the allocation exactly, which is the property that makes the
 record an audit trail rather than a summary.
@@ -925,7 +916,7 @@ record an audit trail rather than a summary.
 | `fail:forbidden` | a `forbid` constraint matched (step 2) |
 | `fail:paybackExceedsHorizon` | `paybackSec ≥ horizon(c)` and `permanent != true` (step 3) |
 | `fail:granularityUnsatisfiable` | no placement satisfies `minPerHost` (§B.6.1) |
-| `fail:controllerBlocked` | its controller reports `health: "blocked"` or `"error"`. `strategy.md` §6.5 step 4 names only `blocked`; `error` is added here because an errored controller's candidates describe a state it may no longer be in |
+| `fail:controllerBlocked` | its controller reports `health: "blocked"` or `"error"` (§6.5 step 4) — an errored controller's candidates describe a state it may no longer be in |
 | `fail:disabled` | a `disable` constraint names its controller |
 
 | `outcome` | Meaning |
@@ -1042,6 +1033,9 @@ It is also the **name → port table**, which resolves the control channel's mis
       "launch": { "script": "/daemon/watchdog.js", "host": "home", "threads": 1, "args": [] } }
   ],
   "domains": [
+    { "id": "stats", "port": 10, "tickMs": 1000,
+      "launch": { "script": "/daemon/stats.js", "host": "home", "threads": 1, "args": [] },
+      "bootRam": 8, "critical": true },
     { "id": "corp", "port": 11, "tickMs": 1000,
       "launch": { "script": "/daemon/corp.js", "host": "home", "threads": 1, "args": [] },
       "bootRam": 64, "critical": false,
@@ -1453,10 +1447,13 @@ an hour and errors again has `consecutive == 1`. It measures *cannot start*, not
 
 ## §16 Divergences from `strategy.md`, and provisional decisions
 
-Each row is something this document decides that no normative document had decided, or decides
-differently. `strategy.md` outranks this file, so each is a **pending edit to `strategy.md`**,
-not a settled disagreement. This table is meant to be exhaustive; a divergence not listed here is
-a defect in this document.
+**Status: X1–X42 accepted and landed in `strategy.md`, 2026-08-26.** Nothing in this table is an
+outstanding divergence. It is kept because the "`strategy.md` today" column records what the
+specification used to say and why it was wrong — which is the part that would otherwise be lost,
+and the reason `reference/rationale.md` exists.
+
+The table is meant to be exhaustive. A divergence from `strategy.md` not listed here is a defect
+in this document, not a decision.
 
 | # | This document | `strategy.md` today | Origin |
 |---|---|---|---|
@@ -1489,7 +1486,7 @@ a defect in this document.
 | X22 | Ports declared in the manifest; `replyPort: int\|null` replaces `reply: bool` | no name→port table exists anywhere; `reply`'s semantics undefined | review U25 |
 | X23 | `MATERIAL_DELTA = 0.10` defines "materially changed" | unquantified | review U13 |
 | X24 | `cost` is the amount of **this round's** resource; `cost == 0` ⇒ `score = Infinity`; a multi-resource candidate is ranked once per round it appears in | "the scarcest resource", undefined; division by zero unaddressed | review U10 |
-| X25 | `advisoryMode` × dial composition table | SQ-7, marked **blocking** | proposed here; SQ-7 stays open until accepted |
+| X25 | `advisoryMode` × dial composition table | SQ-7, marked **blocking** | accepted 2026-08-26; **closes SQ-7** via `strategy.md` §8.2a |
 | X26 | `launch` removed from the state envelope; the manifest is authoritative | prior contract §3 had it in both places | follows from X3 |
 | X27 | A reader meeting a **higher** `schema` sets `health: "blocked"`, not `"error"` | prior contract §8 said `error`, which the same document's watchdog restarts — a guaranteed crash-loop over a condition a restart cannot fix | correction to the prior contract |
 | X28 | `/data/prereqs.json` — a pre-generated dependency graph, new file and new schema | does not exist | requested 2026-08-26 |
@@ -1501,12 +1498,12 @@ a defect in this document.
 | X34 | `fail:controllerBlocked` fires on `health: "error"` as well as `"blocked"` | §6.5 step 4 and §8.4 name only `blocked` | new here |
 | X35 | `unknown` propagation through `and` / `or` / `not` | §3 says an unresolvable path yields `unknown` and stops there | new here |
 | X36 | The **bootstrap script** increments `epoch` on a BitNode change | §9.2 names only the install callback, so `/state/` from the previous node would validate against an unchanged epoch — the exact failure the failsafe exists to catch | new here |
-| X37 | The Director itself carries `tickMs`, `health` and `message` in `director.json`; its `health` is never `error` | §7's schema has none of the three, and nothing restarts the Director | follows from X27 |
+| X37 | The Director itself carries `tickMs`, `health` and `message` in `director.json` | §7's schema has none of the three | follows from X27 |
 | X38 | The watchdog starts **every** manifest domain, ignoring both leases and `disable`; nothing in the system stops a process because of a constraint | §13.1's "what the manifest names and the Director has leased" | X29, corrected |
 | X39 | `spentThisRun` on the controller envelope | not in `strategy.md`; carried over from the prior contract §3 | continuity |
 | X40 | `/data/domains.json` → `resources` classifies every resource by kind | nothing anywhere declares whether `hashes` is consumable or `bladeburner.stamina` regenerating, though §5's four kinds decide round keying, packing and revocability | new here |
 | X41 | `/data/domains.json` → `system[]` carries the Director's and the watchdog's launch metadata; the bootstrap script starts both; the watchdog then monitors the Director | neither process has launch metadata, a port, or a launcher anywhere, yet §13.1 requires a single-script cold start | new here |
-| X42 | The `hacking-cap` example is `0.9`, not `strategy.md` §4.1's `0.5` | at `0.5` the ceiling and set-aside readings of `against` coincide numerically and the ambiguity is invisible | follows from X19 |
+| X42 | The `hacking-cap` example is `0.9` | at `0.5` the ceiling and set-aside readings of `against` coincide numerically, so the example could not distinguish them | follows from X19 |
 
 ## §17 Open
 
@@ -1514,23 +1511,22 @@ a defect in this document.
 |---|---|
 | **O-1** | Does the **Director** read `/data/prereqs.json`? This document says no, because §2.4 forbids the search that would justify it. If the Director should read it, §2.4 needs rewording — it is not a schema change. |
 | **O-2** | Bitburner port-number bounds are asserted, not verified. `/data/domains.json` requires `int ≥ 1` and unique. **Verify against `bitburner-src` before the manifest is written.** |
-| **O-3** | `strategy.md` SQ-7 is closed by X25 *if* the composition table is accepted. Until then it still blocks. |
 | **O-4** | SQ-3 survives X13 for two cases: a structural goal with no unsatisfied `preconditions` (`{kind: "equals", path: "gang.exists"}`), and any goal whose path is temporarily unresolvable and is therefore structural for that tick. Both yield `eta = Infinity`, so the CLI still cannot answer "how long until X" for them. Whether that is acceptable is the original SQ-3 question, narrowed. |
-| **O-5** | A candidate genuinely contended on two resources at once is ranked separately in each round (X24), which can grant it one and displace it in the other. `atomic: true` turns that into all-or-nothing but does not make the two rounds agree. `strategy.md` §6.4 territory; unresolved. |
+| **O-5** | *Now `strategy.md` SQ-9.* A candidate contended on two resources at once is ranked once per round, so it can win one and be displaced in the other; `atomic` makes the grant all-or-nothing without reconciling the rankings. Tracked there, not here. |
 | **O-6** | `/config/` is multi-writer for two files and single-writer for two others. Whether `constraints.json` and `preferences.json` should also carry `revision` for uniformity, or stay human-only, is a judgement call not yet made. |
+| ~~**O-7**~~ | **Decided 2026-08-26: a `stats` controller.** It owns the `player.*` namespace in `provides` — money, karma, skills, reputation — and does nothing else. It publishes no candidates and consumes no resources, so it is a manifest domain with no allocator role. Its `provides` key list is not yet enumerated. |
+| **O-8** | `Condition.kind: "predicate"` has no data contract at schema 2 and is **not implementable**. Two designs are live and neither is chosen — a **predicate manager** service arbitrating writes over a port, or **deleting the kind** in favour of a boolean published through `provides` and tested with `equals`. `strategy.md` §15.1 states both and the argument between them. Whichever wins, this document gains either a port protocol and a persistence file, or one deleted `Condition` row. |
 | **O-9** | **Nothing restarts the watchdog.** It monitors the Director and every domain; if it dies, the fleet keeps running on its last directives and no controller is ever restarted again — a silent degradation. A mutual-watch, a cheap external heartbeat script, or accepting it as a known limit are all defensible; none is chosen. |
-| **O-8** | `Condition.kind: "predicate"` is a permitted value with no data contract: nothing here or in `strategy.md` says how a controller registers one, where the registry lives, or what it costs in RAM. `strategy.md` SQ-5 is the open question; a `predicate` condition is **not implementable at schema 2**. |
-| **O-7** | Who owns the `player.*` namespace in `provides` (X17b)? Something must publish `player.money` and `player.karma` before any goal can be evaluated, and no controller in the current design obviously owns it. A minimal `stats` controller is the likely answer; it is not specified here. |
 
 ## §18 Downstream edits this document requires
 
-Not done here. Listed so they are not forgotten.
+**All doc-set edits are done as of 2026-08-26.** One row remains, and it is code, not prose.
 
 | File | Edit |
 |---|---|
-| `specs/strategy.md` | header `Companion:` line; §2 (X1); §3 (X35); §4.1 (X1, X8, X19); §4.2 (X1b, X20); §6.1 (X10, X11, X12, X15, X16, X31, X32); §6.5 (X13, X13b, X16b, X24, X31, X34); §6.7 (X23); §7 (X37); §7.1 (X15); §8.4 (X34); §9.1 (X6, X17b, X17c); §9.2 (X1, X4, X5, X36); §10 (X18, X33); §11 (X30); §12 (X18); §13.1 (X3, X38); §15 SQ-7 (X25) |
-| `START-HERE.md` | §3 decisions table, §4 precedence list, §5.2 open question, §6 doc map — all name `specs/manager-contract.md` |
-| `review-2026-08.md` | Part 3: Q4–Q8 decided 2026-08-26; C1–C4, U1–U14, U25 dispositioned here; U15 partly (X21 covers reporting, X10 the grammar) |
-| `specs/prior-manager-contract.md` | delete |
+| ~~`specs/strategy.md`~~ | **Done 2026-08-26.** X1–X42 folded in; SQ-7 closed by §8.2a; SQ-3 narrowed by §2.4a; SQ-9 opened for two-way contention |
+| ~~`START-HERE.md`~~ | **Done 2026-08-26.** §3, §4, §5, §6 and §8 rewritten; the same dead references fixed in `recipe-dsl.md`, `corp.md`, `hwgw-batching-design.md` and `rationale.md` |
+| ~~`review-2026-08.md`~~ | **Closed and deleted 2026-08-26.** Q1–Q8 all decided; C1–C4, U1–U15 and U25 dispositioned in §16. `git show 12da099:docs/review-2026-08.md` |
+| ~~`specs/prior-manager-contract.md`~~ | **Deleted 2026-08-26** |
 | `scripts/` | `/data/domains.json`, `/data/prereqs.json` and the bootstrap script do not exist; nothing conforms to this document yet |
-| `claude/` project mirror | re-sync after the above |
+| ~~`claude/` project mirror~~ | **Retired 2026-08-26.** The mirror is gone; the project holds one pointer file. `START-HERE.md` §8 has the reasoning |

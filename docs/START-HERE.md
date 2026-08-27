@@ -30,7 +30,7 @@ private, stale copy was a real failure here, not a hypothetical one.
 | Existing corporation | **none** — the BN3 one was sold |
 | Target | **BN10** for Duplicate Sleeves |
 | Built so far | nothing runnable. `scripts/` holds `tools/ram-costs.js` and `policy/corp/recipes.js` |
-| Next concrete task | **specify the corp snapshot** — see §5.0 |
+| Next concrete task | **specify the corp snapshot** — see §5.0. The top two layers are now settled; this is the last thing blocking code |
 
 **BN9 changes what is worth building.** Hacking income is ~0.1% of normal
 (`ServerMaxMoney 0.01` × `ScriptHackMoney 0.1`) and purchased servers cannot be bought at all
@@ -59,14 +59,19 @@ Settled. Do not re-litigate without a reason; do challenge if you have one. Reas
 | **The allocator is a library, not a Director feature** | A corporation runs the same algorithm over its own separate pool. Nothing in it may name `director.json` or player money | rationale §6 |
 | **`/state/` is observations, `/memory/` is knowledge** | An install is a partial world reset, not a restart. The split is a type distinction, so it stays maintainable | rationale §8 |
 | **The decision record publishes rejected candidates, not only chosen ones** | Counterfactuals are where the analysis lives and are unrecoverable afterwards. The CLI is the read side of this, free if designed for early | rationale §9 |
-| **Target-state convergence, never imperative actions** | "Ensure warehouse level is 17", not "buy 17 upgrades". Restart-safety becomes free. Applies to corp recipes *and* HWGW prep | manager-contract §6 |
-| **Files for state and standing directives; ports for transient commands** | A manager paused by a file flag is still paused after a crash | manager-contract §2 |
-| **A disabled manager idles, it does not exit** | Toggle subsystems live without killing processes; the watchdog won't fight you | manager-contract §6a |
+| **Target-state convergence, never imperative actions** | "Ensure warehouse level is 17", not "buy 17 upgrades". Restart-safety becomes free. Applies to corp recipes *and* HWGW prep | data-contracts A.1 |
+| **Files for state and standing directives; ports for transient commands** | A controller paused by a file flag is still paused after a crash | data-contracts A.1, Part C |
+| **Three switches, not one** — `disable` at allocation, `pause` and `advisoryMode` at execution | They differ in what happens to held resources. A paused controller idles and keeps its lease; a disabled one gives the resource back. Neither exits | strategy §4.3 |
 | **Each script imports only the `ns` calls it issues** | RAM is static analysis and it follows imports. One "all corp calls live here" module costs 960 GB in every importer and nothing runs | corp §1.5 |
 | **Plain JS + `// @ts-check` + JSDoc**, no TypeScript build step | Catches the bug class that matters: a mistyped `ns.corporation` property returns `undefined` and produces a *wrong number* rather than an error | rationale §11 |
 | **Everything JS under `scripts/`; `src/` is Python only; Node tests in `test/`** | `scripts/` is what syncs to the game; daemons import `lib/` at runtime | — |
 | **Commit early, `.gitkeep` every directory** | Git carries only committed files and never empty directories. A prior scaffold was lost to exactly this | — |
 | **Home cores are never purchased** | Every server stays at 1 core, which keeps thread-count arithmetic core-independent | rationale §11 |
+| **Five directories: `/config/`, `/data/`, `/state/`, `/memory/`, `/logs/`** | Only `/state/` is wiped on install. Human-declared intent cannot live there — a `survivesInstall: true` goal would be deleted by the mechanism meant to preserve it | strategy §9.2 |
+| **RAM is requested fungibly and granted placed** | A controller asks for 4096 GB and names no host; the Director bin-packs and issues lease rows. Placement is the allocator's job, and it happens after ranking | strategy §5.1 |
+| **`provides` is the only producer of the world view** | One publisher per path, conflicts resolve to `unknown`. Without it `player.money` has no producer and nothing in the allocator computes | strategy §9.1 |
+| **`group`, not naming convention, stops a ladder being granted twice** | Two rungs of one offer both clearing the gate over-leases the controller and double-counts its production | strategy §6.1a |
+| **Marginal time prices throughput only** | Not search depth, not delayed payoff. Means-level choices — found a corp, form a gang — are authored as goals by the human and never scored | strategy §0 |
 
 **What was rejected, and why, is `reference/rationale.md` §10 and §11.** It is not duplicated
 here — that duplication is how the last doc set drifted.
@@ -80,13 +85,14 @@ Two rules, and they are the whole filing system:
 - **`specs/` is normative. `reference/` is reference.** A normative document binds an
   implementation; where code and a spec disagree, the spec wins until deliberately changed.
   Nothing in `reference/` binds anything.
-- **Precedence, highest first:** `specs/strategy.md`, then `specs/manager-contract.md`, then
+- **Precedence, highest first:** `specs/strategy.md`, then `specs/data-contracts.md`, then
   `specs/recipe-dsl.md`. Where two normative documents disagree, the higher one wins and the
   lower one is a bug to be filed.
 
-One known live instance of that: `manager-contract.md` §4 still describes the pre-consolidation
-`director.json` (`phase`, `reserveFloor`, cash fractions). `strategy.md` §7 is authoritative for
-that file. See §5.2.
+Between the top two the split is finer than precedence: **`strategy.md` owns the meaning of every
+rule, `data-contracts.md` owns the schema that carries it** — types, permitted values, defaults,
+file layout. A disagreement about meaning is a bug in `data-contracts.md`; a field in
+`strategy.md` with no entry there is unimplemented.
 
 ---
 
@@ -102,9 +108,11 @@ Live and unresolved. The first two block work.
 1. **`pull` and `pull-all` land inside `scripts/`**, which is the directory that syncs *to* the
    game — so the next sync overwrites whatever the managers wrote. Pull must default somewhere
    else.
-2. **`manager-contract.md` §4 has not caught up with `strategy.md` §7.** A precedence line says
-   which wins; the schema itself is still the old one. Also still missing: a port allocation
-   table (`§6a` assigns each manager "one fixed port" and never says which).
+2. **`predicate` conditions are not implementable.** `strategy.md` §3 permits them; nothing says
+   how a controller registers one or what the registry costs in RAM. Two designs are live and
+   neither is chosen — a predicate-manager service, or deleting the kind in favour of a boolean
+   published through `provides`. `strategy.md` §15.1 argues both. **Blocks any goal that needs a
+   predicate**, and nothing else.
 3. **`scripts/policy/corp/recipes.js` diverges from its own spec** — a `warehouses: true` field
    the DSL does not define, and no `hire` steps now that the DSL has them.
 4. **The restart-loop cost model is asserted, not derived**, and the numbers in it were BN3's.
@@ -117,12 +125,18 @@ Live and unresolved. The first two block work.
    after its creation cost — but if a second subsystem is equally opaque, the currency needs a
    fallback tier. rationale §3.
 
-`specs/strategy.md` §14 and `managers/corp.md` §12 carry their own, narrower lists.
+8. **Nothing restarts the watchdog.** It restarts the Director and every controller; if it dies,
+   the fleet runs on its last directives and nothing is ever restarted again. A mutual watch, a
+   cheap heartbeat script, or accepting it as a known limit are all defensible.
+   `data-contracts.md` §17 O-9.
 
-**`review-2026-08.md` supersedes this section for detail.** A three-pass audit of the doc set
-found 57 items: contradictions, normative terms that cannot be implemented without guessing,
-and duplication. Its Part 1 is eight questions that need a decision before the rest can be
-fixed. It is a working document and gets retired into `reference/rationale.md` §13 when closed.
+`specs/strategy.md` §15 (`SQ-*`) and `specs/data-contracts.md` §17 (`O-*`) carry the narrower,
+stable-id lists; `managers/corp.md` §12 carries corp's. **Cite those ids, not section numbers.**
+
+**The August 2026 audit is closed.** `review-2026-08.md` raised 57 items and eight blocking
+questions; all eight were decided, the schema work landed in `specs/data-contracts.md`, and its
+§16 records every decision against what the specification used to say. The audit document was
+deleted once that was true — `git show 12da099:docs/review-2026-08.md` to read it.
 
 ---
 
@@ -134,7 +148,7 @@ fixed. It is a working document and gets retired into `reference/rationale.md` �
 |---|---|---|---|
 | 1 | `START-HERE.md` | — | this file: current state, settled decisions, open questions, the map |
 | 2 | `specs/strategy.md` | **normative** | the top layer. Goals, candidates, marginal-time allocation, leases and revocation, `/state` vs `/memory`, the decision record |
-| 3 | `specs/manager-contract.md` | **normative** | how one controller behaves. State envelope, health, candidates, lifecycle, watchdog, control port |
+| 3 | `specs/data-contracts.md` | **normative** | every file and port message the fleet reads or writes: schemas, the five directories, controller lifecycle, the watchdog algorithm |
 | 4 | `reference/rationale.md` | reference | **why** all of the above. Arguments, rejected alternatives, corrections, and the disposition of the retired design review |
 | 5 | `reference/mechanics.md` | reference | verified game facts with sources. BitNode multipliers, install ledger, RAM costs, API drift. The numbers everything else rests on |
 
@@ -146,7 +160,7 @@ fixed. It is a working document and gets retired into `reference/rationale.md` �
 | `managers/corp.md` | reference | corporation domain. Cycle sync, Smart Supply, Market-TA2, round playbooks, the round 3+ allocator, formulas |
 | `hwgw-batching-design.md` | reference | the per-target hacking pipeline. Timing model, batch sizing, prep, drain, RAM leases |
 | `manuals/Corporation-manual.pdf` | source | external, last updated 2026-07-03 |
-| `review-2026-08.md` | working | audit of this doc set: 57 findings, 8 open questions. Retire when closed |
+| `print/*.pdf` | generated | print-formatted copies of the specs. Regenerated, never edited |
 
 Nothing else is scoped, and that is deliberate: `contracts`, `karma`, `gang`, `hacknet`,
 `hashes`, `bladeburner` and `sleeves` were all designed in the previous doc set and none was
@@ -155,8 +169,14 @@ it** (rationale §14).
 
 **Retired documents.** `automation-architecture.md`, `implementation-plan.md`,
 `bitnode-planning.md`, `design-review.md` and the five `managers/*.md` stubs were deleted in the
-consolidation. `rationale.md` cites them in past tense; to read one:
-`git show e75bb01:docs/automation-architecture.md`.
+August consolidation; `manager-contract.md` and `review-2026-08.md` followed it in the
+schema pass. `rationale.md` cites the first group in past tense. To read one:
+
+```
+git show e75bb01:docs/automation-architecture.md    # pre-consolidation
+git show 12da099:docs/specs/manager-contract.md     # superseded by data-contracts.md
+git show 12da099:docs/review-2026-08.md             # the audit, all 8 questions decided
+```
 
 ### Source material
 
@@ -191,18 +211,25 @@ Game mechanics were verified against `bitburner-official/bitburner-src` @ `dev`,
 
 ## 8. Continuity
 
-Two channels carry this project between machines and sessions:
+**This git repo is the only channel. There is no mirror.**
 
-- **This git repo** — code, docs, configs. **Canonical.** All design work lands here first.
-- **The attached claude.ai project** — a mirror of `docs/` under `claude/`, for sessions that
-  cannot reach a filesystem (a phone, another machine). It follows the account rather than the
-  machine. It does **not** carry `manuals/Corporation-manual.pdf`.
+Design work lands here and nowhere else. `docs/` is the whole record; a document that is not in
+this repo does not exist.
 
-The mirror is a copy, not a second source of truth. A session that can read the repo should read
-the repo; where the two disagree the repo is right and the mirror is stale. Never resolve a
-disagreement by editing the mirror, and never add a document that exists only there —
-`claude/SYNC-STATUS.md` in the project records the commit it was last synced from.
+**The claude.ai project used to mirror `docs/` and no longer does** (retired 2026-08-26). It now
+holds a single pointer file and no specifications. The mirror was kept for sessions that could
+not reach a filesystem — a phone, another machine — and the reason it was retired is the one that
+matters more than the convenience it bought:
 
-What does **not** transfer through either channel is the conversation history — the reasoning
+> **A stale specification is worse than no specification.** A session reading a three-day-old
+> `strategy.md` does not know it is stale, and designs confidently against a document that has
+> been rewritten. That is the same failure mode as `reference/rationale.md` §1, arriving by a
+> different route, and it nearly happened during the schema pass.
+
+**A session that cannot reach this repo should say so and stop**, not design from memory or from
+whatever it can recall of the doc set. Getting it to the repo — a Cowork folder connection, a
+paste of the file in question — is cheaper than unwinding a design built on a stale premise.
+
+What does **not** transfer through the repo either is the conversation history — the reasoning
 behind each decision. `reference/rationale.md` is where that goes, and keeping it current is the
 handoff. §3 above is the index into it.
