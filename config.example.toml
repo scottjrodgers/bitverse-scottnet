@@ -1,0 +1,44 @@
+# Bitburner filesync config -- TEMPLATE.
+#
+# Copy this to config.toml (gitignored) and fill in real values there.
+# The two machines in a split gaming-PC/laptop setup need DIFFERENT
+# values for control_bind / control_host / control_token -- that's why
+# this is a template rather than a single shared file.
+
+# Local directory to sync. Relative paths are resolved against the
+# location of this config file. Only matters on whichever machine runs
+# the CLI (push/sync/pull/etc.) -- the daemon itself never touches disk.
+directory = "./scripts"
+
+# Port Bitburner connects to. Set the same port under
+# Options -> Remote API -> port in-game, then press Connect.
+game_port = 12525
+
+# Port the CLI (bb.py) uses to talk to a running `bb.py serve`.
+# Doesn't need to match anything in-game.
+control_port = 12526
+
+# Daemon side only: interface `serve` binds the control-plane socket to.
+# Leave as loopback if the CLI only ever runs on this same machine.
+# Set to a LAN IP (or "0.0.0.0") to let a CLI on another machine reach it --
+# control_token is REQUIRED in that case, and `serve` refuses to start
+# without one.
+control_bind = "127.0.0.1"
+
+# Client side only: host the CLI dials to reach a running `bb.py serve`.
+# Point this at the gaming PC's LAN IP when running the CLI from elsewhere.
+control_host = "127.0.0.1"
+
+# Shared secret checked on every control-plane request. Required whenever
+# control_bind isn't loopback. Leave blank for same-machine-only use.
+# Must be the SAME value on both the daemon machine and every CLI machine.
+control_token = ""
+
+# In-game server files are pushed to / pulled from by default.
+server = "home"
+
+# File extensions synced by `sync`.
+include_extensions = [".js", ".ts", ".txt", ".script", ".json"]
+
+# fnmatch-style patterns checked against the relative path; always excluded.
+exclude_patterns = ["*.d.ts", "node_modules/*", ".git/*", "__pycache__/*"]
