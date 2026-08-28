@@ -4,8 +4,13 @@
   "description": "Bitburner automation: managers, corp pipeline, HWGW batching.",
   "main": "scripts/daemon/watchdog.js",
   "type": "module",
-  "directories": { "doc": "docs" },
-  "scripts": { "test": "node --test test/" },
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:watch": "node --test --watch \"test/**/*.test.js\""
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scottjrodgers/bitverse-scottnet.git"
@@ -13,6 +18,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": { "url": "https://github.com/scottjrodgers/bitverse-scottnet/issues" },
+  "bugs": {
+    "url": "https://github.com/scottjrodgers/bitverse-scottnet/issues"
+  },
   "homepage": "https://github.com/scottjrodgers/bitverse-scottnet#readme"
 }

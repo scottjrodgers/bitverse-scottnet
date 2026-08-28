@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 reference/
+*.iml
 
 # Logs
 logs
