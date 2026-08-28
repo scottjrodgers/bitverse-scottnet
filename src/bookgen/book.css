@@ -1,0 +1,330 @@
+/* ── page geometry ───────────────────────────────────────────────────────
+   Letter, duplex. Mirrored margins: the wide margin is always on the
+   OUTER edge of the spread, which is where a right-handed reader writes. */
+
+@page {
+  size: letter;
+  margin: 0.85in 1in 0.85in 1in;
+}
+
+@page :right {                      /* recto — odd pages, outer edge = right */
+  margin-left: 1.05in;
+  margin-right: 2.2in;
+  @top-right {
+    content: string(section);
+    font: 400 7.8pt "TeX Gyre Heros", sans-serif;
+    color: #666; letter-spacing: 0.03em;
+    margin-bottom: 10pt;
+  }
+  @bottom-right {
+    content: counter(page);
+    font: 400 8.5pt "Bitstream Charter", serif;
+    color: #444; margin-top: 8pt;
+  }
+}
+
+@page :left {                       /* verso — even pages, outer edge = left */
+  margin-left: 2.2in;
+  margin-right: 1.05in;
+  @top-left {
+    content: string(doctitle);
+    font: 400 7.8pt "TeX Gyre Heros", sans-serif;
+    color: #666; letter-spacing: 0.03em;
+    margin-bottom: 10pt;
+  }
+  @bottom-left {
+    content: counter(page);
+    font: 400 8.5pt "Bitstream Charter", serif;
+    color: #444; margin-top: 8pt;
+  }
+}
+
+@page cover  { margin: 1.6in 1.5in; @top-right{content:none} @top-left{content:none}
+               @bottom-right{content:none} @bottom-left{content:none} }
+@page front  { margin: 1in 1.5in 1in 1.2in; @top-right{content:none} @top-left{content:none}
+               @bottom-right{content:none} @bottom-left{content:none} }
+
+/* ── base type ───────────────────────────────────────────────────────── */
+
+html {
+  font: 400 10.5pt/1.46 "Bitstream Charter", "Utopia", Georgia, serif;
+  color: #16181c;
+  hyphens: none;
+  text-align: left;
+}
+body { margin: 0; }
+
+p { margin: 0 0 0.62em 0; orphans: 3; widows: 3; }
+
+strong { font-weight: 700; }
+em     { font-style: italic; }
+
+a { color: inherit; text-decoration: none; }
+
+/* Inline code carries no background. At this density -- most paragraphs hold
+   two or three identifiers -- boxes turn the page grey and fight the prose. */
+code, kbd, samp {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 0.845em;
+  color: #000;
+  word-break: break-word;
+}
+
+/* ── headings ────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4 {
+  font-family: "TeX Gyre Heros", "DejaVu Sans", sans-serif;
+  font-weight: 700;
+  line-height: 1.22;
+  break-after: avoid;
+  margin: 0;
+}
+
+h1 {                                     /* doc title */
+  font-size: 19pt;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.15in 0;
+  padding-bottom: 7pt;
+  border-bottom: 1.6pt solid #16181c;
+  string-set: doctitle content();
+}
+
+h2 {
+  font-size: 12.4pt;
+  margin: 1.5em 0 0.55em 0;
+  string-set: section content();
+  break-before: auto;
+}
+h3 { font-size: 10.6pt; margin: 1.25em 0 0.4em 0; }
+h4 { font-size: 9.6pt;  margin: 1.05em 0 0.35em 0; color: #33363c; }
+
+h2 + h3, h3 + h4 { margin-top: 0.7em; }
+
+/* ── lists ───────────────────────────────────────────────────────────── */
+
+ul, ol { margin: 0 0 0.62em 0; padding-left: 1.25em; break-inside: avoid; }
+ul ul, ol ol, ul ol, ol ul { break-inside: auto; }
+li { margin-bottom: 0.28em; }
+li > ul, li > ol { margin-top: 0.28em; margin-bottom: 0.2em; }
+
+/* ── code blocks ─────────────────────────────────────────────────────── */
+
+pre {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 7.2pt;
+  line-height: 1.4;
+  background: #f6f6f4;
+  border-left: 2.2pt solid #b9bcc2;
+  padding: 6.5pt 8pt 6.5pt 9pt;
+  margin: 0.75em 0 0.85em 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* long blocks must be allowed to split rather than overflow the page */
+pre.long { break-inside: auto; }
+
+/* ── tables ──────────────────────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.6pt;
+  line-height: 1.34;
+  margin: 0.8em 0 0.95em 0;
+}
+thead { display: table-header-group; }      /* repeat header across pages */
+th {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 7.6pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  vertical-align: bottom;
+  padding: 0 7pt 3.5pt 0;
+  border-bottom: 1pt solid #16181c;
+  color: #33363c;
+}
+td {
+  padding: 4pt 7pt 4pt 0;
+  vertical-align: top;
+  border-bottom: 0.4pt solid #d8dade;
+}
+th:last-child, td:last-child { padding-right: 0; }
+tr { break-inside: auto; }
+table.tight { break-inside: avoid; }
+table code { font-size: 0.88em; }
+
+/* ── blockquote — used in these docs for the load-bearing rules ─────── */
+
+blockquote {
+  margin: 0.9em 0 0.95em 0;
+  padding: 2pt 0 2pt 11pt;
+  border-left: 2.2pt solid #16181c;
+  font-size: 10pt;
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr {
+  border: 0;
+  border-top: 0.5pt solid #c9ccd2;
+  margin: 1.35em 0;
+}
+
+/* ── document units ──────────────────────────────────────────────────── */
+
+.doc { break-before: recto; }
+.doc:first-of-type { counter-reset: page 1; }
+
+/* ── cover ───────────────────────────────────────────────────────────── */
+
+.cover { page: cover; break-after: recto; }
+.cover .eyebrow {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 8.6pt; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: #6a6e76;
+  margin-bottom: 0.42in;
+}
+.cover h1.title {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 33pt; line-height: 1.1; font-weight: 700;
+  letter-spacing: -0.025em;
+  border: 0; padding: 0; margin: 0 0 0.16in 0;
+  string-set: none;
+}
+.cover .sub {
+  font-size: 12.5pt; line-height: 1.4; color: #40444c;
+  margin: 0 0 0.5in 0; max-width: 4.6in;
+}
+.cover .meta {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 8.4pt; line-height: 1.75; color: #55595f;
+  border-top: 0.6pt solid #c9ccd2;
+  padding-top: 9pt;
+}
+.cover .meta b { color: #16181c; font-weight: 700; }
+
+.howto {
+  page: front; break-before: verso;
+  font-size: 9.6pt; line-height: 1.5;
+}
+.howto h2 {
+  font-size: 11pt; margin: 0 0 0.5em 0; string-set: none;
+  border-bottom: 0.8pt solid #16181c; padding-bottom: 4pt;
+}
+.howto ul { padding-left: 1.1em; }
+.howto li { margin-bottom: 0.5em; }
+
+/* ── table of contents ───────────────────────────────────────────────── */
+
+.toc { page: front; break-before: recto; }
+.toc h2 {
+  font-size: 13pt; margin: 0 0 0.62em 0; string-set: none;
+  border-bottom: 1.2pt solid #16181c; padding-bottom: 5pt;
+}
+.toc ol { list-style: none; padding: 0; margin: 0; break-inside: auto; }
+.toc > ol > li { break-inside: avoid; }
+.toc > ol > li { margin: 0.62em 0 0 0; }
+.toc .d {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-weight: 700; font-size: 10.2pt;
+}
+.toc .tag {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 6.6pt; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: #fff; background: #16181c;
+  padding: 1pt 4pt; border-radius: 2px; margin-left: 6pt;
+  vertical-align: 1.5pt;
+}
+.toc .tag.ref { background: #8b8f97; }
+.toc ol ol { margin: 0.28em 0 0 0; }
+.toc ol ol li {
+  font-size: 9pt; color: #40444c; margin: 0.1em 0 0.1em 0.9em;
+}
+.toc a::after {
+  content: " " leader('.') " " target-counter(attr(href), page);
+  font-size: 8.6pt; color: #6a6e76;
+}
+.toc .blurb {
+  font-size: 8.8pt; color: #55595f; margin: 0.15em 0 0 0.9em;
+  font-style: italic;
+}
+
+/* ── PDF outline (iPad / Preview sidebar navigation) ─────────────────── */
+h1 { bookmark-level: 1; bookmark-label: content(); }
+h2 { bookmark-level: 2; bookmark-label: content(); }
+h3 { bookmark-level: 3; bookmark-label: content(); }
+h4 { bookmark-level: none; }
+.cover h1.title { bookmark-level: none; }
+.howto h2, .toc h2 { bookmark-level: 1; }
+
+/* ── figures: pre-rendered math and diagrams ─────────────────────────────
+   Both arrive as inline SVG from src/bookgen/prerender.py. WeasyPrint has no
+   MathML and no JavaScript, so nothing here is live -- it is all geometry by
+   the time the stylesheet sees it. */
+
+figure {
+  margin: 1.05em 0 1.15em 0;
+  text-align: center;
+  break-inside: avoid;                 /* a split diagram is worse than a gap */
+}
+figure svg { max-width: 100%; height: auto; }
+
+figcaption {
+  font-family: "TeX Gyre Heros", sans-serif;
+  font-size: 8pt;
+  line-height: 1.4;
+  color: #55595f;
+  margin-top: 6pt;
+  text-align: left;
+}
+figcaption code { font-size: 0.92em; }
+
+/* Diagrams. mermaid emits its own width; cap it to the measure so a wide
+   graph shrinks rather than running into the notes margin. */
+figure.dia svg { width: 100%; max-width: 4.9in; height: auto; }
+figure.dia.wide svg { max-width: 100%; }
+figure.dia { counter-increment: figure; }
+figure.dia figcaption::before {
+  content: "Fig. " counter(figure) ". ";
+  font-weight: 700; color: #16181c;
+}
+
+/* Display equations, numbered on the outer edge. Counters do the numbering
+   that LaTeX would; cross-references would need target-counter and are not
+   built. */
+figure.eqn {
+  display: flex; align-items: center; justify-content: center;
+  counter-increment: eqn;
+  margin: 1.15em 0;
+  page-break-inside: avoid;
+}
+figure.eqn::after {
+  content: "(" counter(eqn) ")";
+  font-family: "Bitstream Charter", serif;
+  font-size: 9.5pt; color: #55595f;
+  margin-left: auto; padding-left: 12pt;
+  flex: 0 0 auto;
+}
+figure.eqn svg { flex: 0 1 auto; }
+
+.doc { counter-reset: figure eqn; }    /* both restart per document */
+
+/* Inline math sits on the baseline: MathJax stamps vertical-align on the SVG
+   in ex units and WeasyPrint honours it, so do not override it here. */
+.imath svg { max-width: none; }
+
+/* Fallbacks. If node or mermaid is unavailable the source is printed rather
+   than dropped -- a missing diagram must be visible, not silent. */
+.math-fallback, .fig-fallback {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 7.4pt;
+  background: #fdf3f3;
+  border-left: 2.2pt solid #c46a6a;
+  padding: 5pt 8pt;
+  white-space: pre-wrap;
+}

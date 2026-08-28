@@ -8,12 +8,20 @@
     "checkJs": false,
     "noEmit": true,
     "strictNullChecks": false,
-    "lib": ["ES2022", "DOM"]
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
   "include": [
     "scripts/**/*.js",
-    "scripts/NetscriptDefinitions.d.ts",
+    "scripts/**/*.d.ts",
     "test/**/*.js"
   ],
-  "exclude": ["node_modules", "prior_scripts", "prior-configs", "src"]
+  "exclude": [
+    "node_modules",
+    "prior_scripts",
+    "prior-configs",
+    "src"
+  ]
 }

@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 reference/
+*.iml
 
 # Logs
 logs
@@ -158,3 +159,18 @@ desktop.ini
 # python
 src/__pycache__/
 *.pyc
+_to_delete/
+
+# bb.py machine-specific config (control_token, control_host/bind differ
+# per machine) -- see config.example.toml for the template
+config.toml
+
+# generated print builds
+bitburner-design-*.pdf
+bitburner-design-review-*.pdf
+
+# bookgen build cache and renderer deps
+.bookgen-cache/
+src/bookgen/node_modules/
+src/bookgen/package-lock.json
+docs/print/

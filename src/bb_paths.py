@@ -30,5 +30,11 @@ def to_bitburner_filename(local_path: Path, root: Path) -> str:
 
 
 def to_local_path(filename: str, root: Path) -> Path:
-    """Convert a Bitburner filename (forward-slash, relative) to a local absolute path."""
-    return (root / filename).resolve()
+    """Convert a Bitburner filename (forward-slash, relative) to a local absolute path.
+
+    Bitburner filenames may carry a leading "/" (its filesystem is flat but
+    slash-prefixed). ``Path("/tmp") / "/etc/passwd"`` discards the left operand
+    entirely and yields ``/etc/passwd``, so an absolute-looking filename would
+    escape ``root``. Strip leading slashes before joining.
+    """
+    return (root / filename.lstrip("/")).resolve()

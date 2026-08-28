@@ -1,0 +1,10 @@
+{
+  "name": "bookgen-render",
+  "private": true,
+  "description": "Math and diagram pre-renderers for src/bookgen/make_book.py",
+  "type": "module",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.0",
+    "mathjax-full": "^3.2.2"
+  }
+}

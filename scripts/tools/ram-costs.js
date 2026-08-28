@@ -7,7 +7,7 @@
  *        run tools/ram-costs.js corporation formulas singularity
  */
 
-/** @param {import(".").NS} ns */
+/** @param {NS} ns */
 export async function main(ns) {
   const namespaces = ns.args.length ? ns.args.map(String) : ["corporation"];
   const lines = [];

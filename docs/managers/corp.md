@@ -1,24 +1,29 @@
-# Manager: `corp`
+# Reference: `corp`
 
-**Status:** designed at the architecture level; optimizers and round 3+ tuning still open.
-**Build order:** step 11 in `docs/automation-architecture.md`, but see §12 — the BN3.3 goal
-justifies pulling it forward.
-**Parent:** `docs/automation-architecture.md`
-**Primary source:** *Corporation manual*, last updated 2026-07-03 (uploaded by Scott).
-Numbers below are quoted from it; the author reports round 1/2 figures were validated over
-200+ headless runs.
+**Status:** reference, not normative. This is the corporation domain knowledge — cycle
+mechanics, formulas, round playbooks, and the manual's tested numbers. The normative rules for
+how the controller *behaves* are in `specs/data-contracts.md`; the round recipes are governed by
+`specs/recipe-dsl.md`; resource allocation is governed by `specs/strategy.md`. Where any of
+those disagree with this document, they win.
 
-**Immediate objective:** finish **BN3 level 3** to unlock `WarehouseAPI` and `OfficeAPI` for
-free in every other BitNode. Without SF3.3 those two unlocks cost **$50b each in corp funds**,
-which makes corporations painful everywhere else. This is a one-time investment with permanent
-payoff — it is why corp automation is worth building well now rather than later.
+**Primary source:** *Corporation manual*, last updated 2026-07-03, kept at
+`docs/manuals/Corporation-manual.pdf`. Numbers below are quoted from it; the author reports the
+round 1 and round 2 figures were validated over 200+ headless runs. See §Source.
 
-**Current save context** (see `docs/implementation-plan.md` §0): BN3, early, holding SF3.2.
-Because `bitNodeN === 3`, the Warehouse and Office APIs **are** auto-granted this run — the $50b
-unlocks are not a concern here, only in later nodes. An existing corporation is running and is
-expendable; it must be disposed of before the round 1 recipe can run (§9, restart path).
+**Why build this well.** Without SF3.3, `WarehouseAPI` and `OfficeAPI` cost **$50b each in corp
+funds**, which makes corporations painful in every node lacking it. With SF3.3 that cost is gone
+permanently, and what remains is the reason the corporation matters: it is the only income
+source that plausibly reaches the **$111 quadrillion** the Covenant sleeve set costs, and that
+money must be earned *inside* BN10 because money does not survive a BitNode change
+(`reference/mechanics.md` §10).
 
-**SF9.1 is held**, which makes two hash levers live rather than hypothetical — see §1.2 and §7.3.
+**Current BitNode, Source-Files and objective are deliberately not recorded here.**
+`START-HERE.md` §2 is the single place that states them. Three documents each keeping a private
+copy, all of them stale, is the specific failure this doc set was reorganised to prevent —
+`reference/rationale.md` §1.
+
+Two of this document's levers (§1.2, §7.3) are hash spends and require SF9; §7.3's research
+spends require a hacknet with hash capacity to match.
 
 ---
 
@@ -89,20 +94,38 @@ historically. Confirm `ns.corporation.bribe()` exists before designing `factions
 The corporation is a **permanent** asset. `corp` must therefore be restartable at any round,
 mid-cycle, with no memory of what it did before — see §1.5.
 
-### 1.5 It is RAM-expensive enough to force script splitting
+### 1.5 Its RAM cost is structural, and it dictates the module layout
 
-The manual states plainly: *"you don't have to do everything in one script. You can make smaller
-scripts that do less and use fewer APIs to keep the RAM usage down, and use `run()` to chain
-them together."*
+The headline figure — 63 functions in the `corporation` namespace, **960 GB** if one script
+referenced all of them (`reference/mechanics.md` §9) — is the least interesting part of this.
+Two other facts do the real work:
+
+- **A BitNode gives 32 GB of home RAM at entry** (128 GB with SF9.2), not the several thousand a
+  late-node save reports. `reference/rationale.md` §12 records a measurement taken in the wrong
+  save state, and the two conclusions it inverted.
+- **RAM is computed by static analysis, and static analysis follows imports.** A module that
+  references an `ns` function costs that function's RAM in *every script importing it*, whether
+  or not the code path is reachable.
+
+The second is the binding constraint, and it is not the same claim as "corp is expensive, so
+split it up." A single `io/corp.js` holding every `ns.corporation` call — the obvious packaging,
+and the one an earlier draft of this design specified — would cost 960 GB **in every importer**,
+and nothing would run at all. The rule is an import-graph rule: *each script may import only the
+calls it actually issues.*
+
+Against 32 GB the practical budget is roughly **one 20 GB action function plus one 10 GB getter
+per script**. Tea plus party is 40 GB and does not fit in a single script.
 
 **Design response:** split `corp` into
 
-- a small, always-resident **cycle daemon** using a minimal API surface — tea/party, Smart
-  Supply, Market-TA2 (§4–5)
-- **one-shot action scripts** the daemon `run()`s and forgets — round setup, upgrade purchasing,
-  product development, office reassignment
+- a small, always-resident **cycle daemon** whose entire API surface is the zero-cost functions
+  (`nextUpdate`, `getBonusTime`, `hasCorporation`, `getConstants`) plus `ns.run` — under 3 GB;
+- **one-shot action scripts** the daemon runs and forgets: tea, party, Smart Supply, Market-TA2
+  pricing, round setup, upgrade purchasing, product development, office reassignment. Each
+  imports only its own calls.
 
-The daemon holds the RAM lease; action scripts borrow from a small reserve inside it.
+The daemon holds the RAM lease and runs one worker at a time; workers borrow from it and exit.
+The orchestrator costing effectively nothing is what makes this affordable — see §4.
 
 ---
 
@@ -160,34 +183,51 @@ it.
 
 ## 4. The cycle daemon — state synchronisation
 
-The daemon is the only always-resident piece. Its loop:
+`await ns.corporation.nextUpdate()` costs **0 GB**, is a genuine await rather than a poll, and
+resolves with the state the corporation has just finished processing. State edges therefore
+**cannot be missed**, whatever bonus time does to the wall-clock period
+(`reference/mechanics.md` §9). The earlier ~100 ms polling design is superseded; it was both
+lossy under bonus-time compression and needlessly expensive.
 
 ```
 loop:
-    state = readCorpState()                    // poll ~100ms
-    if state != lastState:
-        onStateEdge(lastState -> state)
-        lastState = state
-    sleep(POLL_MS)
+    prev = await ns.corporation.nextUpdate()   // 0 GB; resolves once per transition
+    dispatch(prev)                             // prev is the state that just COMPLETED
 
-onStateEdge(prev, next):
-    if next == PURCHASE:   beforePurchase()    // smart supply buy  (§5.2)
-    if prev == PURCHASE:   afterPurchase()     // record raw production (§5.2)
-    if next == START:      onCycleStart()      // tea/party (§5.1), per-cycle allocator (§7)
-    if next == SALE:       beforeSale()        // market-TA2 pricing (§5.3)
+dispatch(prev):
+    if prev == START:       run("/corp/tea.js")       // §5.1, plus the per-cycle allocator §7
+    if prev == PRODUCTION:  run("/corp/supply.js")    // §5.2 — sets buys before next PURCHASE
+    if prev == EXPORT:      run("/corp/pricing.js")   // §5.3 — sets prices before SALE
 ```
+
+**Schedule each service backwards from the state it must precede, not adjacent to it.** The
+cycle is `START -> PURCHASE -> PRODUCTION -> EXPORT -> SALE -> START`. Smart Supply must have set
+its quantities *before* PURCHASE begins, so it is dispatched when PRODUCTION completes — three
+states of headroom instead of a race with the boundary it cares about. Market-TA2 pricing must
+be set before SALE, so it is dispatched on EXPORT completing. Dispatching either at the edge
+immediately preceding its deadline leaves no room for a worker to launch and finish.
 
 **Gotchas:**
 
-- With bonus time a cycle is **1 second**, so all five edges occur inside 1s. The daemon must
-  not do heavy work inline on an edge — queue it and `run()` an action script.
-- Missing a PURCHASE edge means Smart Supply doesn't fire, which is the primary cause of
-  warehouse congestion (§8).
-- `setAutoJobAssignment` **only takes effect at the next cycle's START state**. Job changes are
-  always one cycle delayed — budget for that in any office-reassignment logic.
+- **The daemon dispatches; it never computes.** With bonus time a full cycle is ~1 s, so all
+  five transitions land inside a second. Anything heavier than `ns.run` on an edge is still
+  running when the next edge arrives. This is the §1.5 RAM argument arriving from a second
+  direction: the daemon *cannot* do the work, because it cannot afford the API surface.
+- **A worker may land late.** `ns.run` is asynchronous and the game does not wait for it. Every
+  worker must be safe when it arrives after the state it targeted — a Smart Supply worker that
+  lands inside PURCHASE must detect that and do nothing, not buy into the next cycle.
+- **`nextUpdate` resolves five times per cycle, not once.** Dispatching on the wrong state fails
+  silently: no error, just a service that never runs.
+- **Missing a Smart Supply run causes warehouse congestion** (§8) — the primary failure mode of
+  the whole corporation, and one that does not announce itself.
+- **`setJobAssignment` only takes effect at the next cycle's START state.** Job changes are
+  always one cycle delayed. Budget for it in office-reassignment logic, and do not treat a
+  `jobs` step as satisfied until a full cycle has elapsed (`specs/recipe-dsl.md` §5).
+- **`getCorporation().state` was removed in v3.0.** The surviving properties are `prevState` and
+  `nextState`; prefer `nextUpdate`'s return value over either.
 
-*To verify: whether the API exposes current state, next state, or both, and its exact name.
-The polling design depends on being able to detect edges reliably.*
+`getBonusTime()` is free as well. Log it — a daemon assuming 10 s cycles while the game is
+running 1 s cycles looks inexplicably slow at everything, and nothing else reveals the mismatch.
 
 ---
 
@@ -574,7 +614,7 @@ Do it, let a few cycles run so the profit registers, then accept.
   remainder to R&D**
 - After round 4: **50% R&D**, remainder on the round-4 "profit" ratio
 
-**Implementation gotcha:** `setAutoJobAssignment` moves employees from Unassigned and **throws**
+**Implementation gotcha:** `setJobAssignment` moves employees from Unassigned and **throws**
 if there are not enough. The safe sequence is always:
 
 ```
@@ -757,17 +797,20 @@ Steps 1–7 are enough to reach the round-2 offer of ~14.5t. Steps 8–11 are wh
 
 ## 12. Open questions
 
-- **Should `corp` move earlier in the global build order?** The architecture doc puts it at step
-  11 on the reasoning that $150b is post-gang money. But BN3 gives **free seed money**, so in BN3
-  specifically the corp costs nothing but time — and finishing BN3.3 is the current objective. In
-  BN3 the corp should probably run *concurrently with* the hacking bootstrap, not after it.
-  This likely warrants a BN-conditional branch in the Director's phase machine.
-- **Faction bribery**: confirm it exists in the installed version, then decide how much of the
-  `factions` manager's rep-grinding design it obsoletes. If bribery is live, `factions` becomes a
-  much smaller manager.
-- **Corp API RAM cost** — measure per function, then decide the daemon/action-script split
-  concretely.
-- **Corp state detection API** — exact name and whether it reports current or next state.
+- ~~**Should `corp` move earlier in the global build order?**~~ **Moot.** There is no global
+  build order any more. Corp creation is a purchase candidate competing on goal order like any
+  other (`specs/strategy.md` §6.2, `reference/rationale.md` §6).
+- ~~**Faction bribery** — how much of `factions` does it obsolete?~~ **Dissolved.** Faction work,
+  `ns.share()`, donations and bribery are four candidates advertising production of the same
+  path in four different resources; the allocator picks whichever is cheapest in whatever is
+  currently scarce. `reference/rationale.md` §3.
+- ~~**Corp API RAM cost**~~ **Measured.** 63 functions, 960 GB naive, five at 0 GB;
+  `reference/mechanics.md` §9 and `data/ram-costs.txt`. The split is §1.5.
+- ~~**Corp state detection API**~~ **Answered.** `nextUpdate()`, 0 GB, a genuine await; `state`
+  removed in v3.0 in favour of `prevState`/`nextState`. §4.
+- **What is corp's marginal-time estimate?** Unresolved and possibly unanswerable — "how much
+  sooner do I reach $150b if you give me another 100 GB" has no honest answer. Survivable only
+  because a corporation is autonomous after its creation cost. `reference/rationale.md` §3.
 - **Dividend rate policy after round 4.** Retained earnings compound into more profit; dividends
   buy augs now. Given profit growth is exponential and augs are the actual goal, a low rate early
   and a high rate once profit saturates seems right, but this deserves working through.

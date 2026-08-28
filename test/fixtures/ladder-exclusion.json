@@ -1,0 +1,65 @@
+{
+  "name": "ladder-exclusion: one rung per group, placed on the fewest hosts",
+  "why": "Two rungs of one controller's ladder both clear the gate. Only the higher-scoring one may be granted (strategy.md 6.1a), or the controller is over-leased and its production double-counted.",
+  "given": {
+    "worldView": { "player.money": 5000000000 },
+    "inventory": [
+      { "host": "home", "maxRam": 512 },
+      { "host": "pserv-0", "maxRam": 4096 }
+    ],
+    "constraints": [
+      { "id": "home-ram", "kind": "reserve", "resource": "ram:home", "value": 32 }
+    ],
+    "preferences": [],
+    "goals": [
+      {
+        "id": "cycle-income",
+        "source": "user",
+        "enabled": true,
+        "survivesInstall": false,
+        "condition": {
+          "kind": "threshold",
+          "path": "player.money",
+          "op": ">=",
+          "value": 155000000000
+        },
+        "deadline": null,
+        "preconditions": []
+      }
+    ],
+    "candidates": [
+      {
+        "id": "hacking:t1",
+        "kind": "production",
+        "group": "hacking",
+        "controller": "hacking",
+        "tier": 1,
+        "requires": { "ram": 512 },
+        "produces": { "path": "player.money", "ratePerSec": 1100000 },
+        "transition": { "startSec": 240, "stopSec": 90 },
+        "confidence": "measured"
+      },
+      {
+        "id": "hacking:t2",
+        "kind": "production",
+        "group": "hacking",
+        "controller": "hacking",
+        "tier": 2,
+        "requires": { "ram": 2304 },
+        "produces": { "path": "player.money", "ratePerSec": 4200000 },
+        "transition": { "startSec": 240, "stopSec": 90 },
+        "confidence": "measured"
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "expect": {
+        "outcomes": { "hacking:t2": "granted", "hacking:t1": "excluded" },
+        "leases": [
+          { "consumer": "hacking", "resource": "ram:pserv-0", "granted": 2304 }
+        ]
+      }
+    }
+  ]
+}

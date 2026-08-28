@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import json
 import logging
 import sys
@@ -32,21 +33,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-from bb_config import load_config
+from bb_config import Config, load_config
 from bb_daemon import Daemon
+from bb_paths import to_bitburner_filename, to_local_path
+from bb_watch import iter_syncable_files
 
 DEFAULT_CONFIG_PATH = Path("config.toml")
 
 
-def _send_control_command(control_port: int, cmd: str, args: dict | None = None) -> dict:
+def _send_control_command(config: Config, cmd: str, args: dict | None = None) -> dict:
     async def _run() -> dict:
         try:
-            reader, writer = await asyncio.open_connection("127.0.0.1", control_port)
+            reader, writer = await asyncio.open_connection(config.control_host, config.control_port)
         except (ConnectionRefusedError, OSError):
-            return {"ok": False, "error": "Daemon isn't running. Start it first with: python bb.py serve"}
+            return {
+                "ok": False,
+                "error": (
+                    f"Can't reach a daemon at {config.control_host}:{config.control_port}. "
+                    "Start it with: python bb.py serve"
+                ),
+            }
 
+        payload = {"cmd": cmd, "token": config.control_token, "args": args or {}}
         try:
-            writer.write((json.dumps({"cmd": cmd, "args": args or {}}) + "\n").encode("utf-8"))
+            writer.write((json.dumps(payload) + "\n").encode("utf-8"))
             await writer.drain()
             line = await reader.readline()
         finally:
@@ -78,8 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("init", help="Create a default config.toml if one doesn't exist")
 
-    p_serve = sub.add_parser("serve", help="Start the daemon (leave this running)")
-    p_serve.add_argument("--watch", action="store_true", help="Auto-push files as they change")
+    sub.add_parser("serve", help="Start the daemon (leave this running)")
 
     sub.add_parser("status", help="Show connection status")
 
@@ -139,7 +148,7 @@ def main() -> None:
 
     if args.command == "serve":
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s")
-        daemon = Daemon(config, auto_watch=args.watch)
+        daemon = Daemon(config)
         try:
             asyncio.run(daemon.run())
         except KeyboardInterrupt:
@@ -147,50 +156,95 @@ def main() -> None:
         return
 
     # Everything past this point is a thin client to the running daemon.
+    # Any local file reading/writing happens here, not in the daemon, so
+    # `serve` can run on a different machine than the one you're editing on.
     cmd_args: dict = {}
     server = getattr(args, "server", None)
     if server:
         cmd_args["server"] = server
 
     if args.command == "status":
-        response = _send_control_command(config.control_port, "status")
+        response = _send_control_command(config, "status")
+
     elif args.command == "push":
-        cmd_args["path"] = args.path
-        response = _send_control_command(config.control_port, "push", cmd_args)
+        local_path = Path(args.path).resolve()
+        if not local_path.is_file():
+            print(f"Error: No such file: {local_path}", file=sys.stderr)
+            sys.exit(1)
+        cmd_args["filename"] = to_bitburner_filename(local_path, config.directory)
+        cmd_args["content"] = local_path.read_text(encoding="utf-8")
+        response = _send_control_command(config, "push", cmd_args)
+
     elif args.command == "sync":
-        response = _send_control_command(config.control_port, "sync", cmd_args)
+        cmd_args["files"] = [
+            {
+                "filename": to_bitburner_filename(local_path, config.directory),
+                "content": local_path.read_text(encoding="utf-8"),
+            }
+            for local_path in iter_syncable_files(config.directory, config.include_extensions, config.exclude_patterns)
+        ]
+        response = _send_control_command(config, "sync", cmd_args)
+
     elif args.command == "pull":
         cmd_args["filename"] = args.filename
-        if args.out:
-            cmd_args["out"] = args.out
-        response = _send_control_command(config.control_port, "pull", cmd_args)
+        response = _send_control_command(config, "pull", cmd_args)
+        if response.get("ok"):
+            out = Path(args.out).resolve() if args.out else to_local_path(response["result"]["filename"], config.directory)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(response["result"]["content"], encoding="utf-8")
+            response["result"] = {"pulled": response["result"]["filename"], "path": str(out)}
+
     elif args.command == "pull-all":
-        if args.out_dir:
-            cmd_args["out_dir"] = args.out_dir
-        response = _send_control_command(config.control_port, "pull_all", cmd_args)
+        response = _send_control_command(config, "pull_all", cmd_args)
+        if response.get("ok"):
+            out_dir = Path(args.out_dir).resolve() if args.out_dir else config.directory
+            written = []
+            for entry in response["result"]["files"]:
+                # lstrip("/"): a leading slash would make this absolute and
+                # escape out_dir entirely. See bb_paths.to_local_path().
+                out = out_dir / entry["filename"].lstrip("/")
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(entry["content"], encoding="utf-8")
+                written.append(str(out))
+            response["result"] = {"pulled": written}
+
     elif args.command == "list":
-        response = _send_control_command(config.control_port, "list", cmd_args)
+        response = _send_control_command(config, "list", cmd_args)
     elif args.command == "metadata":
         cmd_args["filename"] = args.filename
-        response = _send_control_command(config.control_port, "metadata", cmd_args)
+        response = _send_control_command(config, "metadata", cmd_args)
     elif args.command == "all-metadata":
-        response = _send_control_command(config.control_port, "all_metadata", cmd_args)
+        response = _send_control_command(config, "all_metadata", cmd_args)
     elif args.command == "rm":
         cmd_args["filename"] = args.filename
-        response = _send_control_command(config.control_port, "rm", cmd_args)
+        response = _send_control_command(config, "rm", cmd_args)
     elif args.command == "ram":
         cmd_args["filename"] = args.filename
-        response = _send_control_command(config.control_port, "ram", cmd_args)
+        response = _send_control_command(config, "ram", cmd_args)
+
     elif args.command == "defs":
-        if args.out:
-            cmd_args["out"] = args.out
-        response = _send_control_command(config.control_port, "defs", cmd_args)
+        response = _send_control_command(config, "defs", cmd_args)
+        if response.get("ok"):
+            out = Path(args.out).resolve() if args.out else (config.directory / "NetscriptDefinitions.d.ts")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(response["result"]["content"], encoding="utf-8")
+            response["result"] = {"path": str(out)}
+
     elif args.command == "servers":
-        response = _send_control_command(config.control_port, "servers")
+        response = _send_control_command(config, "servers")
+
     elif args.command == "save":
-        if args.out:
-            cmd_args["out"] = args.out
-        response = _send_control_command(config.control_port, "save", cmd_args)
+        response = _send_control_command(config, "save", cmd_args)
+        if response.get("ok"):
+            out = Path(args.out).resolve() if args.out else Path("bitburner_save.json").resolve()
+            out.parent.mkdir(parents=True, exist_ok=True)
+            result = response["result"]
+            if result.get("binary"):
+                out.write_bytes(base64.b64decode(result["content"]))
+            else:
+                out.write_text(result["content"], encoding="utf-8")
+            response["result"] = {"identifier": result.get("identifier"), "path": str(out)}
+
     else:  # pragma: no cover - argparse enforces valid choices
         parser.error("Unknown command")
         return
