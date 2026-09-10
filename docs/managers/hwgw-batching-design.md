@@ -283,7 +283,7 @@ progress are harmless.
 
 - `moneyAvailable == 0` → `ns.growthAnalyze` returns `Infinity`. `formulas.growThreads`
   handles it correctly (grow is `(money + threads) × mult`), but guard anyway.
-- If RAM can't cover a full prep, prioritise getting security to min first — grow is much
+- If RAM can't cover a full prep, prioritize getting security to min first — grow is much
   more thread-efficient at min security.
 
 ---

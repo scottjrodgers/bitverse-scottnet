@@ -11,11 +11,11 @@ control-plane socket and prints the reply.
     python bb.py serve --watch         # start the daemon, auto-push on change
     python bb.py status                # is the game connected?
     python bb.py sync                  # push every matching file once
-    python bb.py push scripts/hack.js  # push one file
-    python bb.py pull hack.js          # pull one file down to disk
+    python bb.py push scripts/hack-task.js  # push one file
+    python bb.py pull hack-task.js          # pull one file down to disk
     python bb.py pull-all              # pull everything down to disk
     python bb.py list                  # filenames on the server
-    python bb.py ram hack.js           # RAM cost
+    python bb.py ram hack-task.js           # RAM cost
     python bb.py defs                  # fetch NetscriptDefinitions.d.ts
     python bb.py servers               # all known servers
     python bb.py save                  # fetch the current save file
@@ -100,7 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_sync.add_argument("--server")
 
     p_pull = sub.add_parser("pull", help="Pull one file from the game to disk")
-    p_pull.add_argument("filename", help="Bitburner filename, e.g. hack.js")
+    p_pull.add_argument("filename", help="Bitburner filename, e.g. hack-task.js")
     p_pull.add_argument("--out", help="Local path to write to (default: mirrors the sync directory)")
     p_pull.add_argument("--server")
 

@@ -7,13 +7,11 @@ three weeks — read this, then §6.
 
 ## 1. What this is
 
-Automation for the game **Bitburner**, written as cooperating in-game scripts. The player writes
-the code; Claude is a design partner — architecture, trade-offs, gotchas, pseudo-code — not an
-implementer. Design happens in conversation, gets written into `docs/`, and only then gets built.
+Automation for the game **Bitburner**, written as cooperating in-game scripts. Claude acts as a design partner — architecture, trade-offs, gotchas, pseudo-code.
 
-The doc set was consolidated in **August 2026** after it reached fourteen design documents and
-two script files. `reference/rationale.md` §1 records what went wrong and why the fix was to
-settle the top layer rather than write more of the bottom. Read that before adding a document.
+Implementation will be shared between the player and Claude with the player taking the lead. Design happens in conversation, gets written into `docs/`, and only then gets built.
+
+The doc set was consolidated in **August 2026** after it reached fourteen design documents and two script files. `reference/rationale.md` §1 records what went wrong and why the fix was to settle the top layer rather than write more of the bottom. Read that before adding a document.
 
 ---
 
@@ -25,12 +23,11 @@ private, stale copy was a real failure here, not a hypothetical one.
 
 | | |
 |---|---|
-| BitNode | **BN9** ("Hacktocracy"), working toward SF9.2 |
-| Source-Files | **SF1.3, SF2.3, SF3.3, SF4.3, SF5.1, SF6.1, SF9.1** |
-| Existing corporation | **none** — the BN3 one was sold |
+| BitNode | Design and plan for a general solution, not for any specific bitnode. |
+| Source-Files | **SF1.3, SF2.3, SF3.3, SF4.3, SF5.3, SF6.3, SF7.3, SF9.2** |
 | Target | **BN10** for Duplicate Sleeves |
 | Built so far | nothing runnable. `scripts/` holds `tools/ram-costs.js` and `policy/corp/recipes.js` |
-| Next concrete task | **specify the corp snapshot** — see §5.0. The top two layers are now settled; this is the last thing blocking code |
+| Next concrete task |  |
 
 **BN9 changes what is worth building.** Hacking income is ~0.1% of normal
 (`ServerMaxMoney 0.01` × `ScriptHackMoney 0.1`) and purchased servers cannot be bought at all

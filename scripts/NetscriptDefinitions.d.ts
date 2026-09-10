@@ -7896,13 +7896,13 @@ export interface NS {
    * @example
    * ```js
    * // The simplest way to use the exec command is to call it with just the script name
-   * // and the target server. The following example will try to run generic-hack.js
+   * // and the target server. The following example will try to run generic-hack-task.js
    * // on the foodnstuff server.
-   * ns.exec("generic-hack.js", "foodnstuff");
+   * ns.exec("generic-hack-task.js", "foodnstuff");
    *
-   * // The following example will try to run the script generic-hack.js on the
+   * // The following example will try to run the script generic-hack-task.js on the
    * // joesguns server with 10 threads.
-   * ns.exec("generic-hack.js", "joesguns", {threads: 10});
+   * ns.exec("generic-hack-task.js", "joesguns", {threads: 10});
    *
    * // This last example will try to run the script foo.js on the foodnstuff server
    * // with 5 threads. It will also pass the number 1 and the string “test” in as
@@ -8047,7 +8047,7 @@ export interface NS {
    * @example
    * ```js
    * const server = ns.args[0];
-   * const files = ["hack.js", "weaken.js", "grow.js"];
+   * const files = ["hack-task.js", "weaken-task.js", "grow-task.js"];
    * ns.scp(files, server, "home");
    * ```
    *
